@@ -1,92 +1,70 @@
 body {
-  font-family: "Poppins", sans-serif;
-  background: #fff7f4;
   margin: 0;
-  padding: 0;
+  font-family: "Poppins", sans-serif;
+  background: #fffaf9;
+  color: #333;
 }
+
 header {
   background: #e63946;
   color: white;
   text-align: center;
-  padding: 15px 0;
-  font-size: 1.6em;
-  font-weight: bold;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-}
-.container {
-  max-width: 900px;
-  margin: 20px auto;
-  padding: 10px;
-}
-.category-buttons {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-.category-buttons button {
-  padding: 10px 15px;
-  border: none;
-  border-radius: 8px;
-  background: #f5c518;
-  cursor: pointer;
-  transition: 0.3s;
+  padding: 15px;
+  font-size: 1.5em;
   font-weight: bold;
 }
-.category-buttons button:hover {
-  background: #ff9800;
-}
-.menu {
+
+#menu {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 15px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  padding: 20px;
 }
+
 .card {
   background: white;
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
   overflow: hidden;
-  transition: 0.3s;
+  text-align: center;
+  padding-bottom: 10px;
+  transition: transform 0.2s;
 }
+
 .card:hover {
   transform: scale(1.03);
 }
+
 .card img {
   width: 100%;
   height: 150px;
   object-fit: cover;
 }
-.card .info {
-  padding: 10px;
-  text-align: center;
-}
-.card .info h3 {
-  margin: 5px 0;
-  color: #333;
-}
-.card .info p {
-  color: #777;
-  font-size: 0.9em;
-}
+
 .card button {
   background: #e63946;
-  border: none;
   color: white;
-  padding: 8px 12px;
+  border: none;
+  padding: 8px 14px;
   border-radius: 6px;
   cursor: pointer;
-  font-weight: 600;
 }
-#cart {
+
+.card button:hover {
+  background: #d62828;
+}
+
+#order-section {
+  padding: 20px;
   text-align: center;
-  margin-top: 30px;
 }
-.success {
-  display: none;
-  background: #4caf50;
+
+#success-message {
+  text-align: center;
+  background: #38b000;
   color: white;
+  margin: 10px;
   padding: 10px;
-  border-radius: 6px;
-  margin: 15px 0;
+  border-radius: 8px;
+  font-weight: bold;
 }
