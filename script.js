@@ -1,71 +1,29 @@
-const scriptURL = "https://script.google.com/macros/s/AKfycbxwdnoVk96i-fy0ZvTX9jO0Ky-4s4u8ALNNUcev7PtnT65D2eKiZujPKd4C04RMbrDH/exec";
-let menuData = [];
-let cart = [];
+const scriptURL = "https://script.google.com/macros/s/AKfycbz0dLqVJnC_XJl4sE1otepwWXZOT9WAyH6NdlIx1-F8XiHxfwMT4ECHDFhIOWCPRG4M/exec";
 
-// Load Menu from Google Sheet
-fetch(scriptURL, { mode: 'no-cors' })
+async function loadMenu() {
+  try {
+    const response = await fetch(scriptURL, { mode: "cors" });
+    const data = await response.json();
 
-  .then(res => res.json())
-  .then(data => {
-    menuData = data;
-    displayCategories();
-    displayMenu(data);
-  })
-  .catch(err => console.error("Error loading menu:", err));
+    const menuContainer = document.getElementById("menu");
+    menuContainer.innerHTML = "";
 
-// Display categories dynamically
-function displayCategories() {
-  const categories = [...new Set(menuData.map(i => i.cat))];
-  const container = document.getElementById("category-buttons");
-  container.innerHTML = categories.map(c => `<button onclick="filterMenu('${c}')">${c}</button>`).join(" ");
+    data.forEach(item => {
+      const card = document.createElement("div");
+      card.classList.add("product-card");
+      card.innerHTML = `
+        <img src="${item.img}" alt="${item.name}">
+        <h3>${item.name}</h3>
+        <p>₹${item.price}</p>
+        <p class="cat">${item.cat}</p>
+        <p class="desc">${item.desc}</p>
+        <button onclick="addToCart('${item.name}', ${item.price})">Add to Cart</button>
+      `;
+      menuContainer.appendChild(card);
+    });
+  } catch (err) {
+    console.error("Error loading menu:", err);
+  }
 }
 
-function filterMenu(category) {
-  const filtered = menuData.filter(i => i.cat === category);
-  displayMenu(filtered);
-}
-
-// Display menu items
-function displayMenu(data) {
-  const menu = document.getElementById("menu");
-  menu.innerHTML = data.map(i => `
-    <div class="card">
-      <img src="${i.img}">
-      <h3>${i.name}</h3>
-      <p>₹${i.price}</p>
-      <button onclick='addToCart(${JSON.stringify(i)})'>Add</button>
-    </div>
-  `).join("");
-}
-
-// Add to cart
-function addToCart(item) {
-  cart.push(item);
-  alert(`${item.name} added to cart!`);
-}
-
-// Place Order
-document.getElementById("placeOrder").addEventListener("click", () => {
-  const name = document.getElementById("customerName").value;
-  if (!name || cart.length === 0) return alert("Enter name and select items!");
-
-  fetch(scriptURL, {
-    method: "POST",
-    body: JSON.stringify({ name, items: cart }),
-    headers: { "Content-Type": "application/json" }
-  })
-  .then(r => r.json())
-  .then(res => {
-    document.getElementById("success-message").style.display = "block";
-    cart = [];
-  })
-  .catch(err => console.error("Error placing order:", err));
-});
-
-document.getElementById("cancelOrder").addEventListener("click", () => {
-  cart = [];
-  document.getElementById("customerName").value = "";
-});
-
-
-
+window.onload = loadMenu;
