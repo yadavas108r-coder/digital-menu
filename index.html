@@ -1,29 +1,54 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Yadava’s Digital Menu</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Yadava's Digital Menu</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header>
-    <h1>🍧 Yadava’s Digital Menu</h1>
-  </header>
+  <div class="app">
+    <header class="app-header">
+      <div class="brand">
+        <div class="logo">🍨</div>
+        <div class="brand-text">
+          <div class="title">Yadava’s</div>
+          <div class="subtitle">Digital Menu</div>
+        </div>
+      </div>
+      <nav class="category-bar" id="category-bar">
+        <!-- category buttons injected here -->
+      </nav>
+    </header>
 
-  <main>
-    <div id="category-buttons"></div>
-    <div id="menu"></div>
-  </main>
+    <main class="content">
+      <section id="menu" class="menu-grid" aria-live="polite">
+        <!-- menu cards go here -->
+      </section>
 
-  <div id="order-section">
-    <h2>🧾 Confirm Your Order</h2>
-    <input type="text" id="customerName" placeholder="Enter your name">
-    <button id="placeOrder">Place Order</button>
-    <button id="cancelOrder">Cancel</button>
+      <aside class="cart-panel" id="cart-panel">
+        <h3>Your Cart</h3>
+        <div id="cart-items" class="cart-items">No items yet</div>
+
+        <div class="cart-summary">
+          <div><strong>Total</strong></div>
+          <div id="cart-total">₹0</div>
+        </div>
+
+        <div class="cart-controls">
+          <input id="customerName" placeholder="Enter name / table" />
+          <input id="tableNo" placeholder="Table no (optional)" />
+          <button id="reviewBtn">Review Order</button>
+          <button id="checkoutBtn" class="primary">Checkout</button>
+        </div>
+
+        <div id="success-message" class="success" hidden>✅ Order placed — owner notified</div>
+      </aside>
+    </main>
   </div>
 
-  <div id="success-message" style="display:none;">✅ Order placed successfully!</div>
+  <!-- hidden iframe to receive POST result so page doesn't navigate -->
+  <iframe name="hidden_iframe" style="display:none;"></iframe>
 
   <script src="script.js"></script>
 </body>
