@@ -1,4 +1,4 @@
-const scriptURL = "https://script.google.com/macros/s/AKfycbwjAcJY1hxffDWnT1g8CtKZPjxMvJXb3gTs8R4-nqaXH5CM2FvvKrRleXpyVzGZtpNY/exec";
+const scriptURL = "https://script.google.com/macros/s/AKfycbwUAAH-m_pflrO0wcd60xpRtQajmQINUXo62ts0qMSVlLdgA1PvhnWVWsZhEVjdznEF/exec";
 
 let cart = [];
 
@@ -93,3 +93,4 @@ async function placeOrder() {
 }
 
 window.onload = loadMenu;
+
