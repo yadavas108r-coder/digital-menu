@@ -1,4 +1,4 @@
-const scriptURL = "https://script.google.com/macros/s/AKfycbz0dLqVJnC_XJl4sE1otepwWXZOT9WAyH6NdlIx1-F8XiHxfwMT4ECHDFhIOWCPRG4M/exec";
+const scriptURL = "https://script.google.com/macros/s/AKfycbxwdnoVk96i-fy0ZvTX9jO0Ky-4s4u8ALNNUcev7PtnT65D2eKiZujPKd4C04RMbrDH/exec";
 let menuData = [];
 let cart = [];
 
@@ -66,5 +66,6 @@ document.getElementById("cancelOrder").addEventListener("click", () => {
   cart = [];
   document.getElementById("customerName").value = "";
 });
+
 
 
