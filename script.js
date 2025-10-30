@@ -27,7 +27,7 @@ async function loadMenu(){
     const res = await fetch(MENU_PROXY);
     if(!res.ok) throw new Error("Menu fetch failed: " + res.status);
     const data = await res.json();
-    menuData = Array.isArray(data) ? data : [];
+    menuData = Array.isArray(data) ? data : (data.data || []);
     renderCategories();
     renderMenu(menuData);
   }catch(err){
@@ -167,3 +167,4 @@ function submitOrder(name, table){
 // Init
 loadMenu();
 renderCart();
+
