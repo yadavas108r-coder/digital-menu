@@ -1,4 +1,4 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbxPbE2K1E8RUfR2vDE_m2vI02k4Z1SVKPTT2F_vqT5oMQoDcbBAiEepootDrtTK5Ih0/exec"; // 👈 apna Apps Script URL daalna
+const API_URL = "https://script.google.com/macros/s/AKfycbxRwRvPdVD9WO9MyLI8Oz6NuHTMHKTXE8kJsB3Q7Z7rI3oAVRMIEttcwHDqucwDeEVK/exec"; // 👈 apna URL daalna
 
 let cart = [];
 
@@ -11,9 +11,9 @@ async function loadMenu() {
     <div class="item">
       <img src="${item.Image}" alt="${item.Name}">
       <h3>${item.Name}</h3>
-      <p class="price">${item.Price}</p>
       <p>${item.Description || ''}</p>
-      <button onclick="addToCart('${item.Name}', '${item.Price}')">Add to Cart</button>
+      <p class="price">${item.Price}</p>
+      <button onclick="addToCart('${item.Name}', '${item.Price}')">Add</button>
     </div>
   `).join('');
 }
@@ -43,9 +43,15 @@ document.getElementById("placeOrderBtn").addEventListener("click", async () => {
       })
     });
   }
-  alert("✅ Order placed successfully! Owner notified by email.");
+  showPopup();
   cart = [];
   displayCart();
 });
+
+function showPopup() {
+  const popup = document.getElementById("popup");
+  popup.classList.add("show");
+  setTimeout(() => popup.classList.remove("show"), 3000);
+}
 
 loadMenu();
