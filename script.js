@@ -65,3 +65,4 @@ document.getElementById("cancelOrder").addEventListener("click", () => {
   cart = [];
   document.getElementById("customerName").value = "";
 });
+
