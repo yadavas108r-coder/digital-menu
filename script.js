@@ -3,7 +3,8 @@ let menuData = [];
 let cart = [];
 
 // Load Menu from Google Sheet
-fetch(scriptURL)
+fetch(scriptURL, { mode: 'no-cors' })
+
   .then(res => res.json())
   .then(data => {
     menuData = data;
@@ -65,4 +66,5 @@ document.getElementById("cancelOrder").addEventListener("click", () => {
   cart = [];
   document.getElementById("customerName").value = "";
 });
+
 
