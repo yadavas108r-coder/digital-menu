@@ -1,35 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Yadava’s Digital Menu</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header>
-    <h1>🍨 Yadava’s Digital Menu</h1>
+    <h1>🍧 Yadava’s Digital Menu</h1>
   </header>
 
-  <section id="menu"></section>
+  <main>
+    <div id="category-buttons"></div>
+    <div id="menu"></div>
+  </main>
 
-  <div id="orderModal" class="modal">
-    <div class="modal-content">
-      <h2>Confirm Your Order</h2>
-      <p id="orderDetails"></p>
-      <input type="text" id="custName" placeholder="Enter your name" required />
-      <button id="confirmOrder">Place Order</button>
-      <button id="cancelOrder">Cancel</button>
-    </div>
+  <div id="order-section">
+    <h2>🧾 Confirm Your Order</h2>
+    <input type="text" id="customerName" placeholder="Enter your name">
+    <button id="placeOrder">Place Order</button>
+    <button id="cancelOrder">Cancel</button>
   </div>
 
-  <div id="msgBox" class="message"></div>
+  <div id="success-message" style="display:none;">✅ Order placed successfully!</div>
 
-  <script>
-    const scriptURL = "https://script.google.com/macros/s/AKfycby8NZ23e9BS20sznJwikvZiTxhw49BEvAVSP9pqF9aCv860vPyGtWYdWgAuGEzbjeh2/exec"; // 👈 Replace this
-  </script>
   <script src="script.js"></script>
 </body>
 </html>
-
-
