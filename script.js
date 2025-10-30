@@ -1,4 +1,4 @@
-const scriptURL = "https://script.google.com/macros/s/AKfycbz0dLqVJnC_XJl4sE1otepwWXZOT9WAyH6NdlIx1-F8XiHxfwMT4ECHDFhIOWCPRG4M/exec";
+const scriptURL = "https://script.google.com/macros/s/AKfycby-qVq3Mq0Qxua6fjupu8Aj6nE5BjBRds5QQOr4VeE5tpWbLjBbVGGQWe4Nb0cfmfQ6/exec";
 
 async function loadMenu() {
   try {
@@ -27,3 +27,4 @@ async function loadMenu() {
 }
 
 window.onload = loadMenu;
+
