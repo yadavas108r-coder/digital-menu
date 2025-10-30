@@ -1,83 +1,94 @@
-const scriptURL = "https://script.google.com/macros/s/AKfycbxtk3CnXTyfsvFBnKOoU6l_UbBxBV32z0EHZEXjbXv1xUcLZ1dcaGQmt0CSPjIYTFj7/exec";
+const scriptURL = "https://script.google.com/macros/s/AKfycbwjAcJY1hxffDWnT1g8CtKZPjxMvJXb3gTs8R4-nqaXH5CM2FvvKrRleXpyVzGZtpNY/exec";
 
 let cart = [];
-let menuData = [];
 
+// ✅ Load menu from Google Sheet
 async function loadMenu() {
   try {
-    const res = await fetch(scriptURL);
+    const res = await fetch(scriptURL, { mode: "cors" });
     const data = await res.json();
-    console.log("Menu JSON:", data); // 👀 Debug line
-
-    // Fix: handle both array or object wrapper
-    menuData = Array.isArray(data) ? data : (data.data || []);
+    console.log("Menu loaded:", data);
 
     const menuContainer = document.getElementById("menu");
     menuContainer.innerHTML = "";
 
-    menuData.forEach(item => {
+    // Fix for wrapped array
+    const menuItems = Array.isArray(data) ? data : (data.data || []);
+
+    menuItems.forEach(item => {
+      const imageURL = item.Image || item.img || "https://via.placeholder.com/150?text=No+Image";
+
       const card = document.createElement("div");
       card.classList.add("product-card");
       card.innerHTML = `
-        <img src="${item.Image}" alt="${item.Name}">
-        <h3>${item.Name}</h3>
+        <img src="${imageURL}" alt="${item.Name || item.name}">
+        <h3>${item.Name || item.name}</h3>
+        <p>₹${item.Price || item.price}</p>
         <p class="desc">${item.Description || ""}</p>
-        <p class="price">₹${item.Price}</p>
-        <button onclick="addToCart('${item.Name}', ${item.Price})">Add to Cart</button>
+        <button onclick="addToCart('${item.Name || item.name}', ${item.Price || item.price})">Add to Cart</button>
       `;
       menuContainer.appendChild(card);
     });
+
   } catch (err) {
     console.error("Error loading menu:", err);
   }
 }
 
+// ✅ Add item to cart
 function addToCart(name, price) {
-  const existing = cart.find(i => i.name === name);
-  if (existing) existing.qty++;
-  else cart.push({ name, price, qty: 1 });
+  cart.push({ name, price });
   updateCart();
 }
 
+// ✅ Update cart view
 function updateCart() {
-  const cartList = document.getElementById("cart-items");
-  const totalPrice = document.getElementById("total-price");
-  cartList.innerHTML = "";
+  const total = cart.reduce((sum, item) => sum + item.price, 0);
+  const cartList = document.getElementById("cartList");
+  const cartTotal = document.getElementById("cartTotal");
 
-  let total = 0;
-  cart.forEach(i => {
-    total += i.price * i.qty;
-    const li = document.createElement("li");
-    li.textContent = `${i.name} x${i.qty} - ₹${i.price * i.qty}`;
-    cartList.appendChild(li);
-  });
-  totalPrice.textContent = `Total: ₹${total}`;
+  if (cartList) {
+    cartList.innerHTML = "";
+    cart.forEach(item => {
+      const li = document.createElement("li");
+      li.textContent = `${item.name} — ₹${item.price}`;
+      cartList.appendChild(li);
+    });
+  }
+
+  if (cartTotal) {
+    cartTotal.textContent = `Total: ₹${total}`;
+  }
 }
 
+// ✅ Place order → Google Sheet + Gmail
 async function placeOrder() {
   const name = document.getElementById("customerName").value.trim();
-  const table = document.getElementById("tableNumber").value.trim();
+  if (!name) return alert("Please enter your name!");
 
-  if (!name || !cart.length) {
-    alert("Please enter your name and add items to cart!");
-    return;
-  }
+  if (cart.length === 0) return alert("Your cart is empty!");
+
+  const order = { name, items: cart };
 
   try {
     const res = await fetch(scriptURL, {
       method: "POST",
+      mode: "cors",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, table, items: cart })
+      body: JSON.stringify(order)
     });
 
     const result = await res.json();
-    if (result.success) {
-      alert("✅ Order placed successfully!");
+    console.log(result);
+
+    if (result.status === "success") {
+      document.getElementById("success-message").style.display = "block";
       cart = [];
       updateCart();
-    } else alert("Something went wrong.");
+      document.getElementById("customerName").value = "";
+    }
   } catch (err) {
-    console.error("Order Error:", err);
+    console.error("Error sending order:", err);
   }
 }
 
