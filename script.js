@@ -63,3 +63,4 @@ document.getElementById("placeOrder").addEventListener("click", async () => {
 });
 
 window.onload = loadMenu;
+
