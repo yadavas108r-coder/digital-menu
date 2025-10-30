@@ -1,4 +1,4 @@
-const scriptURL = "https://script.google.com/macros/s/AKfycbwjAcJY1hxffDWnT1g8CtKZPjxMvJXb3gTs8R4-nqaXH5CM2FvvKrRleXpyVzGZtpNY/exec"; // <-- replace with your deployed URL
+const scriptURL = "https://script.google.com/macros/s/AKfycbwWYio7yC5iuV0tsTf4_L1_jH249YCcOLPqr9d65hr4fYbBPAs3erkWSykH0YwaMSZO/exec"; // <-- replace with your deployed URL
 
 async function loadMenu() {
   try {
@@ -63,4 +63,5 @@ document.getElementById("placeOrder").addEventListener("click", async () => {
 });
 
 window.onload = loadMenu;
+
 
