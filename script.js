@@ -1,10 +1,29 @@
-// ✅ Backend endpoint (replace with your deployed Apps Script Web App URL)
-const SHEET_URL = "https://script.google.com/macros/s/AKfycbwvSjW8gxqe3OdsSDaJPyZdfQwq_qnh8Qpj_REno1ncQRt0UJAJ76SqeAyp3WSsbVZF/exec";
+// ✅ Replace with your Apps Script Web App URL
+const SHEET_URL =
+  "https://script.google.com/macros/s/AKfycbwvSjW8gxqe3OdsSDaJPyZdfQwq_qnh8Qpj_REno1ncQRt0UJAJ76SqeAyp3WSsbVZF/exec";
 
-// ✅ Use public proxy to bypass CORS if needed (fallback)
-const PROXY_URL = "https://corsproxy.io/?";
+// ✅ Fetch menu data with CORS fix
+async function loadMenu() {
+  try {
+    const res = await fetch(`${SHEET_URL}?nocache=${Date.now()}`, {
+      method: "GET",
+      mode: "no-cors",
+    });
 
-// ✅ Elements
+    // 👇 Use JSON workaround since mode:no-cors blocks reading response
+    const realData = await fetch(SHEET_URL);
+    const data = await realData.json();
+
+    menuData = data;
+    displayMenu(menuData);
+    populateCategories(menuData);
+  } catch (err) {
+    console.error("❌ Error loading menu:", err);
+    document.getElementById("menu").innerHTML =
+      "<p style='text-align:center;color:red;'>⚠️ Failed to load menu. Please try again later.</p>";
+  }
+}
+
 const menuContainer = document.getElementById("menu");
 const categoryFilter = document.getElementById("categoryFilter");
 const searchInput = document.getElementById("searchInput");
@@ -18,65 +37,36 @@ const placeOrderBtn = document.getElementById("placeOrderBtn");
 let menuData = [];
 let cart = [];
 
-// ✅ Load Menu from Google Sheet
-async function loadMenu() {
-  try {
-    const res = await fetch(SHEET_URL);
-    if (!res.ok) throw new Error("Direct fetch blocked, using proxy...");
-    const data = await res.json();
-    menuData = data.menu || data;
-    displayMenu(menuData);
-    populateCategories(menuData);
-  } catch (err) {
-    console.warn("Retrying via proxy...");
-    try {
-      const proxyRes = await fetch(PROXY_URL + SHEET_URL);
-      const data = await proxyRes.json();
-      menuData = data.menu || data;
-      displayMenu(menuData);
-      populateCategories(menuData);
-    } catch (e) {
-      console.error("❌ Error loading menu:", e);
-      menuContainer.innerHTML = `<p style="color:red;text-align:center;">Error loading menu. Please try again later.</p>`;
-    }
-  }
-}
-
-// ✅ Display Menu Cards
+// ✅ Display Menu Items
 function displayMenu(items) {
   menuContainer.innerHTML = "";
-  if (!items.length) {
-    menuContainer.innerHTML = `<p class="no-results">No dishes found 😢</p>`;
-    return;
-  }
-
-  items.forEach(item => {
+  items.forEach((item) => {
     const card = document.createElement("div");
     card.classList.add("menu-item");
+
     const vegIcon = item.Type?.toLowerCase() === "veg" ? "🟢" : "🔴";
-    const ratingStars = "⭐".repeat(Math.round(item.Rating || 4));
+    const ratingStars = "⭐".repeat(Math.floor(item.Rating || 4));
 
     card.innerHTML = `
-      <img src="${item.Image || 'https://via.placeholder.com/150'}" alt="${item.Name}">
+      <img src="${item.Image}" alt="${item.Name}">
       <div class="menu-details">
         <div class="menu-top">
           <h3>${item.Name}</h3>
           <span class="veg-icon">${vegIcon}</span>
         </div>
         <div class="rating">${ratingStars}</div>
-        <p class="desc">${item.Description || ''}</p>
+        <p>${item.Description}</p>
         <p class="price">₹${item.Price}</p>
-        <button class="add-btn" onclick="addToCart('${item.Name}', ${item.Price})">+ Add</button>
+        <button class="add-btn" onclick="addToCart('${item.Name}', ${item.Price})">Add to Cart</button>
       </div>`;
     menuContainer.appendChild(card);
   });
 }
 
-// ✅ Populate Category Dropdown
+// ✅ Category Dropdown
 function populateCategories(data) {
-  const categories = [...new Set(data.map(i => i.Category).filter(Boolean))];
-  categoryFilter.innerHTML = `<option value="All">All Categories</option>`;
-  categories.forEach(cat => {
+  const categories = [...new Set(data.map((i) => i.Category))];
+  categories.forEach((cat) => {
     const opt = document.createElement("option");
     opt.value = cat;
     opt.textContent = cat;
@@ -84,22 +74,21 @@ function populateCategories(data) {
   });
 }
 
-// ✅ Filters
 categoryFilter.addEventListener("change", filterMenu);
 searchInput.addEventListener("input", filterMenu);
 
 function filterMenu() {
   const cat = categoryFilter.value;
-  const term = searchInput.value.toLowerCase();
+  const searchTerm = searchInput.value.toLowerCase();
   const filtered = menuData.filter(
-    i =>
-      (cat === "All" || i.Category === cat) &&
-      i.Name.toLowerCase().includes(term)
+    (item) =>
+      (cat === "All" || item.Category === cat) &&
+      item.Name.toLowerCase().includes(searchTerm)
   );
   displayMenu(filtered);
 }
 
-// ✅ Cart System
+// ✅ Cart Management
 function addToCart(name, price) {
   cart.push({ name, price });
   updateCart();
@@ -111,14 +100,14 @@ function updateCart() {
   cart.forEach((item, index) => {
     total += item.price;
     const li = document.createElement("li");
-    li.innerHTML = `${item.name} - ₹${item.price} <span class="remove" onclick="removeItem(${index})">✖</span>`;
+    li.innerHTML = `${item.name} - ₹${item.price} <button onclick="removeFromCart(${index})">❌</button>`;
     cartItems.appendChild(li);
   });
   cartTotal.textContent = total;
   cartCount.textContent = cart.length;
 }
 
-function removeItem(index) {
+function removeFromCart(index) {
   cart.splice(index, 1);
   updateCart();
 }
@@ -132,29 +121,38 @@ placeOrderBtn.addEventListener("click", async () => {
   const name = document.getElementById("userName").value.trim();
   const email = document.getElementById("userEmail").value.trim();
   const note = document.getElementById("userNote").value.trim();
-  const total = cart.reduce((sum, i) => sum + i.price, 0);
 
   if (!name || cart.length === 0) {
-    alert("Please enter your name and add at least one item!");
+    alert("⚠️ Please enter your name and add at least one item.");
     return;
   }
 
-  const order = { name, email, note, cart, totalAmount: total };
+  const totalAmount = cart.reduce((sum, item) => sum + item.price, 0);
+
+  const orderData = {
+    name,
+    email,
+    note,
+    cart,
+    totalAmount,
+  };
 
   try {
-    await fetch(SHEET_URL, {
+    const res = await fetch(SHEET_URL, {
       method: "POST",
-      body: JSON.stringify(order),
       headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(orderData),
     });
+
+    const text = await res.text();
     alert("✅ Order placed successfully!");
     cart = [];
     updateCart();
-    cartPanel.classList.remove("active");
   } catch (err) {
-    alert("⚠️ Order failed, try again later!");
-    console.error(err);
+    console.error("Error placing order:", err);
+    alert("❌ Failed to place order. Please try again.");
   }
 });
 
+// ✅ Initialize
 loadMenu();
