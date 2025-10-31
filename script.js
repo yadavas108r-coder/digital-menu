@@ -1,4 +1,6 @@
-const scriptURL = "https://script.google.com/macros/s/AKfycbz2td1i9H1IRB9D4rzxxE6s7o9Rw-QP8gG7CkugtIzUBWxsrDjkds5Bb8QmjoYzMJAb/exec";
+// ✅ Make sure this is the FIRST line
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbwUAAH-m_pflrO0wcd60xpRtQajmQINUXo62ts0qMSVlLdgA1PvhnWVWsZhEVjdznEF/exec";
+
 const menuContainer = document.getElementById("menu");
 const cartCount = document.getElementById("cart-count");
 
