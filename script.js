@@ -1,112 +1,110 @@
-const SHEET_URL =
-  "https://script.google.com/macros/s/AKfycbwSuIalYZM29yG7_TQYeaXG_mxWKl5I5C3hSHNIN3h8BUgjdxe38zvcH-Gp6cRxmFhz/exec";
-
-const menuContainer = document.getElementById("menu");
-const cartCount = document.getElementById("cart-count");
-const cartModal = document.getElementById("cart-modal");
-const cartItems = document.getElementById("cart-items");
-const totalElement = document.getElementById("total");
-const closeCartBtn = document.getElementById("closeCart");
-const placeOrderBtn = document.getElementById("placeOrder");
-
+let menuData = [];
 let cart = [];
 
 async function loadMenu() {
-  try {
-    const res = await fetch(SHEET_URL);
-    const data = await res.json();
+  const res = await fetch(SCRIPT_URL);
+  menuData = await res.json();
 
-    menuContainer.innerHTML = "";
-    data.forEach((item) => {
-      const card = document.createElement("div");
-      card.classList.add("product-card");
-      card.innerHTML = `
-        <img src="${item.Image}" alt="${item.Name}">
-        <div class="product-info">
-          <h3>${item.Name}</h3>
-          <p>${item.Category}</p>
-          <p>${item.Description}</p>
-          <p class="price">₹${item.Price}</p>
-          <button onclick="addToCart('${item.Name}', ${item.Price})">Add to Cart</button>
-        </div>
-      `;
-      menuContainer.appendChild(card);
-    });
-  } catch (err) {
-    console.error("Error loading menu:", err);
-  }
-}
-
-function addToCart(name, price) {
-  cart.push({ name, price });
-  updateCartCount();
-}
-
-function updateCartCount() {
-  cartCount.textContent = cart.length;
-}
-
-document.getElementById("cart-icon").addEventListener("click", () => {
-  showCart();
-});
-
-function showCart() {
-  cartModal.classList.remove("hidden");
-  cartItems.innerHTML = "";
-
-  let total = 0;
-  cart.forEach((item, i) => {
-    total += Number(item.price);
-    const li = document.createElement("li");
-    li.textContent = `${item.name} - ₹${item.price}`;
-    cartItems.appendChild(li);
+  // Load category filter
+  const categories = [...new Set(menuData.map(i => i.Category))];
+  const select = document.getElementById("categoryFilter");
+  categories.forEach(cat => {
+    const opt = document.createElement("option");
+    opt.value = cat;
+    opt.textContent = cat;
+    select.appendChild(opt);
   });
 
-  totalElement.textContent = `Total: ₹${total}`;
+  renderMenu(menuData);
 }
 
-closeCartBtn.addEventListener("click", () => {
-  cartModal.classList.add("hidden");
+function renderMenu(data) {
+  const container = document.getElementById("menuContainer");
+  container.innerHTML = "";
+  data.forEach(item => {
+    const typeIcon = item.Type.toLowerCase() === "veg"
+      ? '<span class="veg-icon"></span>'
+      : '<span class="nonveg-icon"></span>';
+
+    const card = document.createElement("div");
+    card.classList.add("card");
+    card.innerHTML = `
+      <img src="${item.Image}" alt="${item.Name}" />
+      <div class="card-content">
+        <h3>${typeIcon}${item.Name}</h3>
+        <p class="price">₹${item.Price}</p>
+        <p>${item.Description}</p>
+        <button onclick="addToCart('${item.Name}', ${item.Price})">Add</button>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+document.getElementById("categoryFilter").addEventListener("change", e => {
+  const val = e.target.value;
+  if (val === "all") renderMenu(menuData);
+  else renderMenu(menuData.filter(i => i.Category === val));
 });
 
-placeOrderBtn.addEventListener("click", async () => {
+function addToCart(name, price) {
+  const existing = cart.find(i => i.name === name);
+  if (existing) existing.qty++;
+  else cart.push({ name, price, qty: 1 });
+  updateCart();
+}
+
+function updateCart() {
+  const cartDiv = document.getElementById("cartItems");
+  cartDiv.innerHTML = "";
+  let total = 0;
+
+  cart.forEach(item => {
+    total += item.price * item.qty;
+    const div = document.createElement("div");
+    div.classList.add("cart-item");
+    div.innerHTML = `
+      <span>${item.name} x${item.qty}</span>
+      <span>₹${item.price * item.qty}</span>
+    `;
+    cartDiv.appendChild(div);
+  });
+
+  document.getElementById("totalAmount").textContent = total;
+}
+
+document.getElementById("placeOrder").addEventListener("click", async () => {
   const name = document.getElementById("customerName").value.trim();
-  const table = document.getElementById("tableNo").value.trim();
-  const review = document.getElementById("review").value.trim();
+  const email = document.getElementById("customerEmail").value.trim();
+  const review = document.getElementById("customerReview").value.trim();
+  const total = document.getElementById("totalAmount").textContent;
 
-  if (!name) {
-    alert("Please enter your name.");
+  if (!name || cart.length === 0) {
+    alert("Please enter your name and add at least one item!");
     return;
   }
-  if (cart.length === 0) {
-    alert("Your cart is empty!");
-    return;
-  }
-
-  const totalAmount = cart.reduce((sum, i) => sum + i.price, 0);
 
   const orderData = {
     name,
-    table,
-    review,
+    email,
     cart,
-    totalAmount,
-    timestamp: new Date().toISOString(),
+    totalAmount: total,
+    review
   };
 
-  try {
-    await fetch(SHEET_URL, {
-      method: "POST",
-      body: JSON.stringify(orderData),
-    });
-    alert("✅ Order placed successfully!");
-    cart = [];
-    updateCartCount();
-    cartModal.classList.add("hidden");
-  } catch (err) {
-    console.error("Error placing order:", err);
-    alert("❌ Error placing order!");
-  }
+  const res = await fetch(SCRIPT_URL, {
+    method: "POST",
+    body: JSON.stringify(orderData),
+    headers: { "Content-Type": "application/json" }
+  });
+
+  const text = await res.text();
+  alert(text);
+  cart = [];
+  updateCart();
+  document.getElementById("customerName").value = "";
+  document.getElementById("customerEmail").value = "";
+  document.getElementById("customerReview").value = "";
 });
 
-window.onload = loadMenu;
+loadMenu();
