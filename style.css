@@ -1,83 +1,83 @@
+/* Reset & Basics */
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: 'Poppins', sans-serif;
+  font-family: "Poppins", sans-serif;
 }
 
 body {
-  background-color: #fff8f8;
+  background: #f9f9f9;
   color: #333;
 }
 
 /* Header */
 header {
-  background: #d32f2f;
+  background: #e23744;
   color: #fff;
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  padding: 10px 30px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  align-items: center;
+  padding: 12px 24px;
   position: sticky;
   top: 0;
   z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-header h1 {
-  font-size: 22px;
-  font-weight: 600;
+header .logo {
+  font-weight: 700;
+  font-size: 20px;
 }
 
-header input, header select {
-  padding: 8px;
-  border-radius: 6px;
+header .filters {
+  display: flex;
+  gap: 10px;
+}
+
+header input,
+header select {
+  padding: 8px 10px;
+  border-radius: 8px;
   border: none;
   outline: none;
 }
 
-header #cartIconBtn {
+.cart-btn button {
   background: #fff;
-  color: #d32f2f;
+  color: #e23744;
   border: none;
-  font-size: 18px;
   border-radius: 8px;
-  padding: 8px 12px;
+  font-size: 16px;
+  padding: 8px 14px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: 0.3s;
 }
 
-header #cartIconBtn:hover {
-  background: #ffcdd2;
-}
-
-/* Layout */
-main {
-  display: flex;
-  gap: 20px;
-  padding: 20px;
+.cart-btn button:hover {
+  background: #ffe3e3;
 }
 
 /* Menu Grid */
 #menu {
-  flex: 3;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 20px;
+  padding: 20px;
 }
 
-/* Card */
+/* Product Card */
 .menu-item {
   background: #fff;
   border-radius: 16px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
   overflow: hidden;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: all 0.3s ease;
 }
 
 .menu-item:hover {
   transform: translateY(-4px);
-  box-shadow: 0 6px 14px rgba(0,0,0,0.2);
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.15);
 }
 
 .menu-item img {
@@ -90,46 +90,70 @@ main {
   padding: 15px;
 }
 
-.menu-details h3 {
+.menu-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.menu-top h3 {
   font-size: 18px;
-  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.veg-icon {
+  font-size: 16px;
+}
+
+.menu-details p {
+  margin-top: 6px;
+  color: #555;
+  font-size: 14px;
 }
 
 .price {
-  color: #d32f2f;
+  color: #e23744;
   font-weight: bold;
+  margin-top: 8px;
 }
 
+.rating {
+  color: #f4b400;
+  margin-top: 6px;
+}
+
+/* Add Button */
 .add-btn {
-  background: #d32f2f;
+  background: #e23744;
   color: white;
   border: none;
   border-radius: 8px;
   padding: 8px 12px;
   cursor: pointer;
-  margin-top: 8px;
-  transition: 0.3s;
+  font-weight: 500;
+  margin-top: 10px;
+  transition: background 0.3s;
 }
 
 .add-btn:hover {
-  background: #b71c1c;
+  background: #c62828;
 }
 
 /* Cart Panel */
 #cart {
   flex: 1;
   background: #fff;
-  border-radius: 12px;
-  padding: 15px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  border-radius: 16px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  padding: 20px;
+  width: 320px;
   position: fixed;
+  top: 80px;
   right: -400px;
-  top: 70px;
-  width: 300px;
+  transition: right 0.3s ease;
   height: 80vh;
   overflow-y: auto;
-  transition: right 0.3s ease;
-  z-index: 999;
+  z-index: 2000;
 }
 
 #cart.active {
@@ -137,8 +161,8 @@ main {
 }
 
 #cart h2 {
-  margin-bottom: 10px;
   font-size: 20px;
+  margin-bottom: 10px;
 }
 
 #cartItems {
@@ -149,29 +173,29 @@ main {
 #cartItems li {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 6px;
+  padding: 6px 0;
   border-bottom: 1px solid #eee;
-  padding-bottom: 4px;
 }
 
 .total {
   font-weight: bold;
   font-size: 16px;
-  margin-bottom: 10px;
+  margin: 12px 0;
 }
 
 #placeOrderBtn {
-  background: #d32f2f;
+  background: #e23744;
   color: #fff;
   border: none;
   border-radius: 6px;
   padding: 10px;
   cursor: pointer;
   width: 100%;
+  transition: 0.3s;
 }
 
 #placeOrderBtn:hover {
-  background: #b71c1c;
+  background: #c62828;
 }
 
 /* Footer */
@@ -180,5 +204,19 @@ footer {
   background: #222;
   color: #fff;
   padding: 10px;
+  font-size: 14px;
   margin-top: 40px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  #menu {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  #menu {
+    grid-template-columns: 1fr;
+  }
 }
