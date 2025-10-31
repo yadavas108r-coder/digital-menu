@@ -1,5 +1,4 @@
-const SHEET_URL =
-  "https://script.google.com/macros/s/AKfycbyGu5yn_ViSyvy4E3aQYJdSa4XzBN44cj_T-wGvclWXCJ9F9GU6SZTUGl17QD5amO7x/exec";
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbz6L5MZsc-tsneXmk9asBDpaLJJra7BZHTAFFbSWq5bvCJM-d7Iia0lb2vtUV2ucLhC/exec";
 
 const menuContainer = document.getElementById("menu");
 const categoryFilter = document.getElementById("categoryFilter");
@@ -14,99 +13,54 @@ const placeOrderBtn = document.getElementById("placeOrderBtn");
 let menuData = [];
 let cart = [];
 
-// ✅ Main function to load menu with multiple fallback methods
-async function loadMenu() {
-  console.log("🔄 Loading menu...");
+// ✅ Simple JSONP method that works with Google Apps Script
+function loadMenu() {
+  console.log("🔄 Loading menu via JSONP...");
   
-  try {
-    // Method 1: Try direct fetch first
-    const data = await fetchMenuDirect();
-    menuData = data.menu || data;
-    console.log("✅ Menu loaded via direct fetch:", menuData);
-    displayMenu(menuData);
-    populateCategories(menuData);
-    return;
-  } catch (error) {
-    console.log("❌ Direct fetch failed, trying JSONP...", error);
-  }
-
-  try {
-    // Method 2: Try JSONP fallback
-    const data = await fetchMenuJSONP();
-    menuData = data.menu || data;
-    console.log("✅ Menu loaded via JSONP:", menuData);
-    displayMenu(menuData);
-    populateCategories(menuData);
-    return;
-  } catch (error) {
-    console.log("❌ JSONP also failed:", error);
-  }
-
-  // Method 3: Show error message
-  showMenuError();
-}
-
-// ✅ Method 1: Direct fetch with proper CORS handling
-async function fetchMenuDirect() {
-  const response = await fetch(`${SHEET_URL}?nocache=${Date.now()}`, {
-    method: "GET",
-    headers: {
-      'Accept': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
-
-  const data = await response.json();
-  return data;
-}
-
-// ✅ Method 2: JSONP fallback
-function fetchMenuJSONP() {
   return new Promise((resolve, reject) => {
-    const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
+    const callbackName = 'handleMenuResponse_' + Date.now();
     const script = document.createElement('script');
-    const timeoutId = setTimeout(() => {
-      cleanup();
-      reject(new Error('JSONP timeout'));
-    }, 10000); // 10 second timeout
-
-    function cleanup() {
-      clearTimeout(timeoutId);
-      delete window[callbackName];
-      if (script.parentNode) {
-        document.body.removeChild(script);
-      }
-    }
-
+    
+    // Define the callback function
     window[callbackName] = function(data) {
-      cleanup();
-      resolve(data);
+      // Clean up
+      delete window[callbackName];
+      document.body.removeChild(script);
+      
+      console.log("✅ Menu loaded successfully:", data);
+      
+      if (data && data.menu) {
+        menuData = data.menu;
+        displayMenu(menuData);
+        populateCategories(menuData);
+        resolve(data);
+      } else {
+        reject(new Error('Invalid menu data received'));
+      }
     };
-
-    script.src = `${SHEET_URL}?callback=${callbackName}&nocache=${Date.now()}`;
+    
+    // Set up error handling
     script.onerror = function() {
-      cleanup();
-      reject(new Error('JSONP script failed to load'));
+      delete window[callbackName];
+      document.body.removeChild(script);
+      reject(new Error('Failed to load menu'));
     };
-
+    
+    // Create the script URL
+    script.src = `${SHEET_URL}?callback=${callbackName}`;
     document.body.appendChild(script);
+    
+    // Timeout after 10 seconds
+    setTimeout(() => {
+      if (window[callbackName]) {
+        delete window[callbackName];
+        if (script.parentNode) {
+          document.body.removeChild(script);
+        }
+        reject(new Error('Menu loading timeout'));
+      }
+    }, 10000);
   });
-}
-
-// ✅ Method 3: Show error message
-function showMenuError() {
-  menuContainer.innerHTML = `
-    <div style="text-align:center; color:red; padding: 2rem;">
-      <p>⚠️ Failed to load menu.</p>
-      <p>Please check your internet connection and try again.</p>
-      <button onclick="loadMenu()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
-        Retry
-      </button>
-    </div>
-  `;
 }
 
 // ✅ Display Menu Items
@@ -338,7 +292,6 @@ placeOrderBtn.addEventListener("click", async () => {
       method: "POST",
       headers: { 
         "Content-Type": "application/json",
-        "Accept": "application/json"
       },
       body: JSON.stringify(orderData),
     });
@@ -369,12 +322,22 @@ placeOrderBtn.addEventListener("click", async () => {
   }
 });
 
+// ✅ Error handler for JSONP
+function handleMenuResponse(data) {
+  // This will be called by the JSONP response
+  console.log("✅ Menu data received:", data);
+  if (data && data.menu) {
+    menuData = data.menu;
+    displayMenu(menuData);
+    populateCategories(menuData);
+  }
+}
+
 // ✅ Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
   console.log("🚀 Initializing Digital Menu...");
-  loadMenu();
   
-  // Add some basic styles for new elements
+  // Add CSS for animations
   const style = document.createElement('style');
   style.textContent = `
     @keyframes slideIn {
@@ -412,4 +375,18 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   `;
   document.head.appendChild(style);
+  
+  // Load the menu
+  loadMenu().catch(error => {
+    console.error("❌ Failed to load menu:", error);
+    menuContainer.innerHTML = `
+      <div style="text-align:center; color:red; padding: 2rem;">
+        <p>⚠️ Failed to load menu.</p>
+        <p>Please check your internet connection and try again.</p>
+        <button onclick="loadMenu()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+          Retry
+        </button>
+      </div>
+    `;
+  });
 });
