@@ -6,13 +6,13 @@ body {
 }
 
 header {
-  background: #ff4757;
+  background: linear-gradient(90deg, #ff4757, #ff6b81);
   color: white;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 20px;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+  padding: 14px 24px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
 }
 
 .logo {
@@ -33,41 +33,51 @@ header {
   border-radius: 25px;
   font-weight: bold;
   cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .menu-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
   gap: 20px;
   padding: 20px;
 }
 
 .product-card {
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
   overflow: hidden;
-  transition: 0.3s;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  transition: 0.3s ease;
   text-align: center;
+  position: relative;
 }
 
 .product-card:hover {
   transform: translateY(-5px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
 }
 
 .product-card img {
   width: 100%;
-  height: 180px;
+  height: 190px;
   object-fit: cover;
+  border-bottom: 3px solid #ff4757;
 }
 
 .product-info {
-  padding: 10px;
+  padding: 12px;
+}
+
+.product-info h3 {
+  margin: 6px 0;
+  font-size: 18px;
 }
 
 .price {
   color: #ff4757;
   font-weight: bold;
+  font-size: 17px;
 }
 
 button {
@@ -75,16 +85,16 @@ button {
   color: white;
   border: none;
   padding: 8px 14px;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   transition: 0.2s;
+  margin-top: 5px;
 }
 
 button:hover {
   background: #e84118;
 }
 
-/* Cart modal */
 .cart-modal {
   position: fixed;
   top: 0;
@@ -104,10 +114,11 @@ button:hover {
 .cart-content {
   background: white;
   padding: 20px;
-  border-radius: 10px;
+  border-radius: 12px;
   width: 90%;
-  max-width: 400px;
+  max-width: 420px;
   text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .cart-content input,
