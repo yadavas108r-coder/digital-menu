@@ -1,5 +1,5 @@
-// ✅ Make sure this is the FIRST line
-const SHEET_URL = "https://script.google.com/macros/s/AKfycbx21b7H-r6glb03p11Z9TBTYKif9RhoCsoy-EerVOCTyzgWn3RROvSGiQQ4lb9uTQc/exec";
+const SHEET_URL =
+  "https://script.google.com/macros/s/AKfycbwSuIalYZM29yG7_TQYeaXG_mxWKl5I5C3hSHNIN3h8BUgjdxe38zvcH-Gp6cRxmFhz/exec";
 
 const menuContainer = document.getElementById("menu");
 const cartCount = document.getElementById("cart-count");
@@ -39,10 +39,10 @@ async function loadMenu() {
 
 function addToCart(name, price) {
   cart.push({ name, price });
-  updateCart();
+  updateCartCount();
 }
 
-function updateCart() {
+function updateCartCount() {
   cartCount.textContent = cart.length;
 }
 
@@ -56,7 +56,7 @@ function showCart() {
 
   let total = 0;
   cart.forEach((item, i) => {
-    total += item.price;
+    total += Number(item.price);
     const li = document.createElement("li");
     li.textContent = `${item.name} - ₹${item.price}`;
     cartItems.appendChild(li);
@@ -78,12 +78,19 @@ placeOrderBtn.addEventListener("click", async () => {
     alert("Please enter your name.");
     return;
   }
+  if (cart.length === 0) {
+    alert("Your cart is empty!");
+    return;
+  }
+
+  const totalAmount = cart.reduce((sum, i) => sum + i.price, 0);
 
   const orderData = {
     name,
     table,
     review,
     cart,
+    totalAmount,
     timestamp: new Date().toISOString(),
   };
 
@@ -94,10 +101,11 @@ placeOrderBtn.addEventListener("click", async () => {
     });
     alert("✅ Order placed successfully!");
     cart = [];
-    updateCart();
+    updateCartCount();
     cartModal.classList.add("hidden");
   } catch (err) {
-    alert("Error placing order!");
+    console.error("Error placing order:", err);
+    alert("❌ Error placing order!");
   }
 });
 
