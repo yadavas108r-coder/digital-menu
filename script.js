@@ -1,5 +1,5 @@
 // ✅ Make sure this is the FIRST line
-const SHEET_URL = "https://script.google.com/macros/s/AKfycbwUAAH-m_pflrO0wcd60xpRtQajmQINUXo62ts0qMSVlLdgA1PvhnWVWsZhEVjdznEF/exec";
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbx21b7H-r6glb03p11Z9TBTYKif9RhoCsoy-EerVOCTyzgWn3RROvSGiQQ4lb9uTQc/exec";
 
 const menuContainer = document.getElementById("menu");
 const cartCount = document.getElementById("cart-count");
@@ -53,3 +53,4 @@ function updateCart() {
 
 // ✅ Load menu on page load
 window.onload = loadMenu;
+
