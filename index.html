@@ -3,44 +3,39 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Yadava’s Digital Menu</title>
+  <title>Yadava’s Menu</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header>
-    <div class="logo">
-      <img src="https://cdn-icons-png.flaticon.com/512/2921/2921820.png" alt="logo" />
-      <h1>Yadava’s</h1>
-    </div>
-    <div id="cart-icon">
-      🛒 <span id="cart-count">0</span>
-    </div>
+    <h1>🍴 Yadava’s Menu</h1>
+    <select id="categoryFilter">
+      <option value="all">All Categories</option>
+    </select>
   </header>
 
   <main>
-    <section id="menu" class="menu-container"></section>
-
-    <!-- Cart Modal -->
-    <div id="cart-modal" class="cart-modal hidden">
-      <div class="cart-content">
-        <h2>Your Cart</h2>
-        <ul id="cart-items"></ul>
-        <p id="total">Total: ₹0</p>
-
-        <input type="text" id="customerName" placeholder="Enter your name" />
-        <input type="text" id="tableNo" placeholder="Table number (optional)" />
-        <textarea id="review" placeholder="Write your review (optional)"></textarea>
-
+    <section id="menuContainer"></section>
+    <aside id="cart">
+      <h2>🛒 Your Cart</h2>
+      <div id="cartItems"></div>
+      <div class="cart-total">
+        <p>Total: ₹<span id="totalAmount">0</span></p>
+        <input type="text" id="customerName" placeholder="Your Name" />
+        <input type="email" id="customerEmail" placeholder="Email (optional)" />
+        <textarea id="customerReview" placeholder="Special Note (optional)"></textarea>
         <button id="placeOrder">Place Order</button>
-        <button id="closeCart">Close</button>
       </div>
-    </div>
+    </aside>
   </main>
 
   <footer>
-    <p>Made with ❤️ by Yadava’s</p>
+    <p>© 2025 Yadava’s | Powered by Sanatan Energy 🍃</p>
   </footer>
 
+  <script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwVFdvGohTuO7Nr4DKjT4zbHZ48bv4CE1NfJDiFtnk0NGlUEtT7bKOct-F-HRbmHQ4I/exec"; // 🔗 Replace with Apps Script Web App URL
+  </script>
   <script src="script.js"></script>
 </body>
 </html>
