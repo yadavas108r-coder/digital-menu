@@ -3,15 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Yadava’s Menu</title>
+  <title>🍴 Yadava’s Menu</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header>
     <h1>🍴 Yadava’s Menu</h1>
-    <select id="categoryFilter">
-      <option value="all">All Categories</option>
-    </select>
+    <div class="header-controls">
+      <input type="text" id="searchBar" placeholder="Search dishes..." />
+      <select id="categoryFilter">
+        <option value="all">All Categories</option>
+      </select>
+    </div>
   </header>
 
   <main>
@@ -34,7 +37,7 @@
   </footer>
 
   <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwVFdvGohTuO7Nr4DKjT4zbHZ48bv4CE1NfJDiFtnk0NGlUEtT7bKOct-F-HRbmHQ4I/exec"; // 🔗 Replace with Apps Script Web App URL
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwVFdvGohTuO7Nr4DKjT4zbHZ48bv4CE1NfJDiFtnk0NGlUEtT7bKOct-F-HRbmHQ4I/exec"; // 🔗 Replace with Apps Script URL
   </script>
   <script src="script.js"></script>
 </body>
