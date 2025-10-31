@@ -4,6 +4,7 @@ const cartCount = document.getElementById("cart-count");
 
 let cart = [];
 
+// ✅ Load menu from Google Sheet
 async function loadMenu() {
   try {
     const response = await fetch(SHEET_URL);
@@ -12,7 +13,6 @@ async function loadMenu() {
     menuContainer.innerHTML = "";
 
     data.forEach((item) => {
-      // Skip empty rows
       if (!item.Name || !item.Image) return;
 
       const card = document.createElement("div");
@@ -36,15 +36,18 @@ async function loadMenu() {
   }
 }
 
+// ✅ Add to Cart Function
 function addToCart(name, price) {
   cart.push({ name, price });
   updateCart();
 }
 
+// ✅ Update Cart Count
 function updateCart() {
   if (cartCount) {
     cartCount.textContent = cart.length;
   }
 }
 
+// ✅ Load menu on page load
 window.onload = loadMenu;
