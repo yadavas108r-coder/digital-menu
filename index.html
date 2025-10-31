@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Yadava’s Menu</title>
-  <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/857/857681.png" />
   <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/857/857681.png" />
 </head>
 <body>
   <header>
@@ -16,27 +16,27 @@
         <option value="All">All Categories</option>
       </select>
     </div>
-    <button id="cartIconBtn" class="cart-btn">
-      🛒 <span id="cartCount">0</span>
-    </button>
+    <div class="cart-btn">
+      <button id="cartIconBtn">🛒 <span id="cartCount">0</span></button>
+    </div>
   </header>
 
   <main>
     <section id="menu" class="menu-grid"></section>
 
-    <aside id="cart" class="cart-panel">
+    <aside id="cart">
       <h2>🛍️ Your Cart</h2>
       <ul id="cartItems"></ul>
       <p class="total">Total: ₹<span id="cartTotal">0</span></p>
       <input type="text" id="userName" placeholder="Your Name" />
       <input type="email" id="userEmail" placeholder="Email (optional)" />
       <textarea id="userNote" placeholder="Special Note (optional)"></textarea>
-      <button id="placeOrderBtn" class="place-order">Place Order</button>
+      <button id="placeOrderBtn">Place Order</button>
     </aside>
   </main>
 
   <footer>
-    <p>© 2025 <b>Yadava’s</b> | Powered by <b>Sanatan Energy 🌿</b></p>
+    <p>© 2025 Yadava’s | Powered by Sanatan Energy 🌿</p>
   </footer>
 
   <script src="script.js"></script>
