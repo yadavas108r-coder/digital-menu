@@ -1,6 +1,6 @@
 // ✅ Replace with your Apps Script Web App URL
 const SHEET_URL =
-  "https://script.google.com/macros/s/AKfycbwvSjW8gxqe3OdsSDaJPyZdfQwq_qnh8Qpj_REno1ncQRt0UJAJ76SqeAyp3WSsbVZF/exec";
+  "https://script.google.com/macros/s/AKfycbzZvOt-FviBzc0JTJuOxgMUMeWL6PEWZVl0ZxD0-oVLsOQcDGOTE06Sqg8D04lbIaSK/exec";
 
 // ✅ Fetch menu data with CORS fix
 async function loadMenu() {
@@ -156,3 +156,4 @@ placeOrderBtn.addEventListener("click", async () => {
 
 // ✅ Initialize
 loadMenu();
+
