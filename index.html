@@ -18,16 +18,19 @@
   </header>
 
   <main>
-    <div id="menu" class="menu-container"></div>
+    <section id="menu" class="menu-container"></section>
 
+    <!-- Cart Modal -->
     <div id="cart-modal" class="cart-modal hidden">
       <div class="cart-content">
-        <h2>Your Order</h2>
+        <h2>Your Cart</h2>
         <ul id="cart-items"></ul>
         <p id="total">Total: ₹0</p>
+
         <input type="text" id="customerName" placeholder="Enter your name" />
         <input type="text" id="tableNo" placeholder="Table number (optional)" />
         <textarea id="review" placeholder="Write your review (optional)"></textarea>
+
         <button id="placeOrder">Place Order</button>
         <button id="closeCart">Close</button>
       </div>
