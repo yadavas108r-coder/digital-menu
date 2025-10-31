@@ -1,4 +1,4 @@
-const SHEET_URL = "https://script.google.com/macros/s/AKfycbyk7EK2uxJ7UnI7i3wKoNDWa7HIoITGOvlQpC8ZbnwusH-2P9vIytkVKhfagIooJVQ1/exec";
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbyGu5yn_ViSyvy4E3aQYJdSa4XzBN44cj_T-wGvclWXCJ9F9GU6SZTUGl17QD5amO7x/exec";
 
 // DOM Elements
 const menuContainer = document.getElementById("menu");
@@ -264,3 +264,192 @@ function showToast(message) {
         color: white;
         padding: 12px 20px;
         border-radius: 4px;
+        z-index: 1000;
+        animation: slideInRight 0.3s ease-out;
+    `;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
+function showMenuError(errorMessage = 'Failed to load menu') {
+    if (!menuContainer) return;
+    
+    menuContainer.innerHTML = `
+        <div class="error-message">
+            <h3>😕 Menu Not Available</h3>
+            <p>${errorMessage}</p>
+            <button onclick="loadMenu()" class="retry-btn">Try Again</button>
+        </div>
+    `;
+}
+
+// ✅ Event listeners
+if (categoryFilter) {
+    categoryFilter.addEventListener("change", filterMenu);
+}
+
+if (searchInput) {
+    searchInput.addEventListener("input", filterMenu);
+}
+
+if (cartBtn) {
+    cartBtn.addEventListener("click", () => {
+        cartPanel.classList.toggle("active");
+    });
+}
+
+if (placeOrderBtn) {
+    placeOrderBtn.addEventListener("click", placeOrder);
+}
+
+// ✅ Place order function
+async function placeOrder() {
+    const name = document.getElementById("userName")?.value.trim();
+    const email = document.getElementById("userEmail")?.value.trim();
+    const table = document.getElementById("userTable")?.value.trim() || "N/A";
+    const note = document.getElementById("userNote")?.value.trim() || "No note";
+
+    if (!name) {
+        alert("Please enter your name");
+        return;
+    }
+
+    if (cart.length === 0) {
+        alert("Please add items to your cart");
+        return;
+    }
+
+    const orderData = {
+        name,
+        email: email || "N/A",
+        table,
+        note,
+        cart,
+        totalAmount: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+    };
+
+    try {
+        placeOrderBtn.disabled = true;
+        placeOrderBtn.textContent = "Placing Order...";
+
+        const response = await fetch(SHEET_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(orderData)
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+            alert("Order placed successfully!");
+            cart = [];
+            updateCart();
+            // Clear form fields
+            document.getElementById("userName").value = "";
+            document.getElementById("userEmail").value = "";
+            document.getElementById("userTable").value = "";
+            document.getElementById("userNote").value = "";
+            cartPanel.classList.remove("active");
+        } else {
+            throw new Error(result.error);
+        }
+    } catch (error) {
+        console.error("Order error:", error);
+        alert("Failed to place order. Please try again.");
+    } finally {
+        placeOrderBtn.disabled = false;
+        placeOrderBtn.textContent = "Place Order";
+    }
+}
+
+// ✅ Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("🚀 Yadava's Menu Initializing...");
+    
+    // Add custom styles
+    const styles = `
+        <style>
+            .error-message {
+                text-align: center;
+                padding: 3rem 1rem;
+                color: #666;
+            }
+            .error-message h3 {
+                margin-bottom: 1rem;
+                color: #ff4444;
+            }
+            .retry-btn {
+                background: #007bff;
+                color: white;
+                border: none;
+                padding: 0.75rem 1.5rem;
+                border-radius: 4px;
+                cursor: pointer;
+                margin-top: 1rem;
+            }
+            .retry-btn:hover {
+                background: #0056b3;
+            }
+            .category {
+                background: #e9ecef;
+                color: #495057;
+                padding: 0.25rem 0.5rem;
+                border-radius: 12px;
+                font-size: 0.8rem;
+                display: inline-block;
+                margin: 0.25rem 0;
+            }
+            @keyframes slideInRight {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            .empty-cart {
+                text-align: center;
+                color: #666;
+                padding: 2rem;
+            }
+            .empty-state {
+                text-align: center;
+                padding: 3rem 1rem;
+                color: #666;
+            }
+            .cart-item-content {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                width: 100%;
+            }
+            .cart-item-controls {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+            .cart-item-controls button {
+                padding: 0.2rem 0.5rem;
+                border: 1px solid #ddd;
+                background: white;
+                cursor: pointer;
+                border-radius: 3px;
+            }
+            .remove-btn {
+                background: #ff4444 !important;
+                color: white;
+                border: none !important;
+            }
+            .quantity {
+                min-width: 20px;
+                text-align: center;
+            }
+        </style>
+    `;
+    document.head.insertAdjacentHTML('beforeend', styles);
+    
+    // Load the menu
+    loadMenu().catch(error => {
+        console.error("Initialization error:", error);
+    });
+});
