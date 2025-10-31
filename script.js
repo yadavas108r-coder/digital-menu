@@ -1,5 +1,19 @@
 const SHEET_URL = "https://script.google.com/macros/s/AKfycbyJeEYQym3VCnPuNbTM3vTd0wUSSww73kPybj7Oc-Ya7ocBcZnLCz9UYG-KpWnnvbn4/exec";
 
+// ✅ Use public CORS proxy
+const PROXY_URL = "https://cors-anywhere.herokuapp.com/";
+
+async function loadMenu() {
+  try {
+    const res = await fetch(PROXY_URL + SHEET_URL);
+    const data = await res.json();
+    console.log("Menu loaded:", data);
+    displayMenu(data);
+  } catch (err) {
+    console.error("Error loading menu:", err);
+  }
+}
+
 const menuContainer = document.getElementById("menu");
 const categoryFilter = document.getElementById("categoryFilter");
 const searchInput = document.getElementById("searchInput");
@@ -95,5 +109,6 @@ cartBtn.addEventListener("click", () => {
 });
 
 loadMenu();
+
 
 
