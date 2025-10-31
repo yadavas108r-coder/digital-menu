@@ -1,6 +1,18 @@
 // ✅ Replace with your Apps Script Web App URL
 const SHEET_URL =
-  "https://script.google.com/macros/s/AKfycbw1pTb4bUYuicEkL2o-BiNz4QXrHjbCRcIbOn7njeGWUlr3i78m7M3MdYgbDjZItAQK/exec";
+  "https://script.google.com/macros/s/AKfycbyxOybZ9f-JK_kgADXzRfNStOhEaC2yWhyZPwZu5GvUjy_xZmo6-MrxOWMpjXADWGZs/exec";
+
+function loadMenu() {
+  const callbackName = "handleMenuResponse";
+  const script = document.createElement("script");
+  script.src = `${SCRIPT_URL}?callback=${callbackName}`;
+  document.body.appendChild(script);
+}
+
+function handleMenuResponse(data) {
+  console.log("✅ Menu Loaded:", data);
+  // your displayMenu() logic here
+}
 
 // ✅ Fetch menu data with CORS fix
 async function loadMenu() {
@@ -156,5 +168,6 @@ placeOrderBtn.addEventListener("click", async () => {
 
 // ✅ Initialize
 loadMenu();
+
 
 
