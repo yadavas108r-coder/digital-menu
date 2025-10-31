@@ -1,5 +1,6 @@
-const SHEET_URL = "https://script.google.com/macros/s/AKfycbz6L5MZsc-tsneXmk9asBDpaLJJra7BZHTAFFbSWq5bvCJM-d7Iia0lb2vtUV2ucLhC/exec";
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbzsMZPrf8pVzsfFeuOQOB7wAvnzTweXYO8bjX8HTTnQ4HagWSC5hJCm5wLZMenff3AX/exec";
 
+// DOM Elements
 const menuContainer = document.getElementById("menu");
 const categoryFilter = document.getElementById("categoryFilter");
 const searchInput = document.getElementById("searchInput");
@@ -13,380 +14,390 @@ const placeOrderBtn = document.getElementById("placeOrderBtn");
 let menuData = [];
 let cart = [];
 
-// ✅ Simple JSONP method that works with Google Apps Script
+// ✅ Simple and reliable menu loading
 function loadMenu() {
-  console.log("🔄 Loading menu via JSONP...");
-  
-  return new Promise((resolve, reject) => {
-    const callbackName = 'handleMenuResponse_' + Date.now();
-    const script = document.createElement('script');
+    console.log("🔄 Loading menu...");
     
-    // Define the callback function
-    window[callbackName] = function(data) {
-      // Clean up
-      delete window[callbackName];
-      document.body.removeChild(script);
-      
-      console.log("✅ Menu loaded successfully:", data);
-      
-      if (data && data.menu) {
-        menuData = data.menu;
-        displayMenu(menuData);
-        populateCategories(menuData);
-        resolve(data);
-      } else {
-        reject(new Error('Invalid menu data received'));
-      }
-    };
-    
-    // Set up error handling
-    script.onerror = function() {
-      delete window[callbackName];
-      document.body.removeChild(script);
-      reject(new Error('Failed to load menu'));
-    };
-    
-    // Create the script URL
-    script.src = `${SHEET_URL}?callback=${callbackName}`;
-    document.body.appendChild(script);
-    
-    // Timeout after 10 seconds
-    setTimeout(() => {
-      if (window[callbackName]) {
-        delete window[callbackName];
-        if (script.parentNode) {
-          document.body.removeChild(script);
-        }
-        reject(new Error('Menu loading timeout'));
-      }
-    }, 10000);
-  });
-}
-
-// ✅ Display Menu Items
-function displayMenu(items) {
-  if (!items || items.length === 0) {
-    menuContainer.innerHTML = "<p style='text-align:center;'>No menu items found.</p>";
-    return;
-  }
-
-  menuContainer.innerHTML = "";
-  items.forEach((item) => {
-    const card = document.createElement("div");
-    card.classList.add("menu-item");
-
-    // Safe property access with fallbacks
-    const itemName = item.Name || item.name || "Unnamed Item";
-    const itemPrice = item.Price || item.price || 0;
-    const itemDescription = item.Description || item.description || "No description available";
-    const itemImage = item.Image || item.image || "https://via.placeholder.com/200x150?text=No+Image";
-    const itemType = item.Type || item.type || "veg";
-    const itemRating = item.Rating || item.rating || 4;
-
-    const vegIcon = itemType.toLowerCase() === "veg" ? "🟢" : "🔴";
-    const ratingStars = "⭐".repeat(Math.floor(itemRating));
-
-    card.innerHTML = `
-      <img src="${itemImage}" alt="${itemName}" onerror="this.src='https://via.placeholder.com/200x150?text=No+Image'">
-      <div class="menu-details">
-        <div class="menu-top">
-          <h3>${itemName}</h3>
-          <span class="veg-icon">${vegIcon}</span>
-        </div>
-        <div class="rating">${ratingStars}</div>
-        <p>${itemDescription}</p>
-        <p class="price">₹${itemPrice}</p>
-        <button class="add-btn" onclick="addToCart('${itemName.replace(/'/g, "\\'")}', ${itemPrice})">
-          Add to Cart
-        </button>
-      </div>`;
-    menuContainer.appendChild(card);
-  });
-}
-
-// ✅ Category Dropdown
-function populateCategories(data) {
-  if (!data || data.length === 0) return;
-
-  // Clear existing options except "All"
-  categoryFilter.innerHTML = '<option value="All">All Categories</option>';
-
-  const categories = [...new Set(data.map(item => {
-    return item.Category || item.category || "Uncategorized";
-  }))];
-
-  categories.forEach((cat) => {
-    const opt = document.createElement("option");
-    opt.value = cat;
-    opt.textContent = cat;
-    categoryFilter.appendChild(opt);
-  });
-}
-
-// ✅ Event Listeners for filtering
-categoryFilter.addEventListener("change", filterMenu);
-searchInput.addEventListener("input", filterMenu);
-
-function filterMenu() {
-  const cat = categoryFilter.value;
-  const searchTerm = searchInput.value.toLowerCase();
-  
-  const filtered = menuData.filter((item) => {
-    const itemName = item.Name || item.name || "";
-    const itemCategory = item.Category || item.category || "";
-    
-    const categoryMatch = cat === "All" || itemCategory === cat;
-    const searchMatch = itemName.toLowerCase().includes(searchTerm);
-    
-    return categoryMatch && searchMatch;
-  });
-  
-  displayMenu(filtered);
-}
-
-// ✅ Cart Management
-function addToCart(name, price) {
-  // Check if item already exists in cart
-  const existingItemIndex = cart.findIndex(item => item.name === name);
-  
-  if (existingItemIndex > -1) {
-    // Update quantity if item exists
-    cart[existingItemIndex].quantity = (cart[existingItemIndex].quantity || 1) + 1;
-  } else {
-    // Add new item
-    cart.push({ 
-      name, 
-      price, 
-      quantity: 1 
+    return new Promise((resolve, reject) => {
+        const callbackName = 'menuCallback_' + Math.random().toString(36).substring(7);
+        const script = document.createElement('script');
+        
+        // Define the callback function
+        window[callbackName] = function(response) {
+            console.log("📦 Raw response:", response);
+            
+            // Clean up
+            delete window[callbackName];
+            if (script.parentNode) {
+                document.body.removeChild(script);
+            }
+            
+            if (response && response.status === 'success' && response.menu) {
+                console.log("✅ Menu loaded successfully!");
+                menuData = response.menu;
+                displayMenu(menuData);
+                populateCategories(menuData);
+                resolve(response);
+            } else {
+                console.error("❌ Invalid menu data:", response);
+                showMenuError();
+                reject(new Error('Invalid menu data received'));
+            }
+        };
+        
+        // Set up error handling
+        script.onerror = function() {
+            console.error("❌ Script loading failed");
+            delete window[callbackName];
+            if (script.parentNode) {
+                document.body.removeChild(script);
+            }
+            showMenuError();
+            reject(new Error('Failed to load menu script'));
+        };
+        
+        // Create the script URL with callback
+        const url = `${SHEET_URL}?callback=${callbackName}`;
+        console.log("🔗 Loading from:", url);
+        script.src = url;
+        
+        document.body.appendChild(script);
+        
+        // Timeout after 15 seconds
+        setTimeout(() => {
+            if (window[callbackName]) {
+                console.error("⏰ Menu loading timeout");
+                delete window[callbackName];
+                if (script.parentNode) {
+                    document.body.removeChild(script);
+                }
+                showMenuError();
+                reject(new Error('Menu loading timeout'));
+            }
+        }, 15000);
     });
-  }
-  
-  updateCart();
-  showAddToCartAnimation(name);
+}
+
+// ✅ Display menu items
+function displayMenu(items) {
+    if (!items || items.length === 0) {
+        menuContainer.innerHTML = "<p style='text-align:center; color:#666;'>No menu items available.</p>";
+        return;
+    }
+
+    console.log("🎨 Displaying", items.length, "menu items");
+    menuContainer.innerHTML = "";
+    
+    items.forEach((item, index) => {
+        const card = document.createElement("div");
+        card.className = "menu-item";
+        
+        // Safe property access
+        const name = item.Name || item.name || `Item ${index + 1}`;
+        const price = item.Price || item.price || 0;
+        const description = item.Description || item.description || "Delicious item";
+        const image = item.Image || item.image || "https://via.placeholder.com/200x150/4CAF50/white?text=Yadava%27s";
+        const type = (item.Type || item.type || "veg").toLowerCase();
+        const category = item.Category || item.category || "General";
+        
+        const vegIcon = type === "veg" ? "🟢" : "🔴";
+        const rating = item.Rating || item.rating || 4;
+        const ratingStars = "⭐".repeat(Math.min(5, Math.max(1, Math.floor(rating))));
+
+        card.innerHTML = `
+            <img src="${image}" alt="${name}" 
+                 onerror="this.src='https://via.placeholder.com/200x150/4CAF50/white?text=Yadava%27s'">
+            <div class="menu-details">
+                <div class="menu-top">
+                    <h3>${name}</h3>
+                    <span class="veg-icon">${vegIcon}</span>
+                </div>
+                <div class="category-tag">${category}</div>
+                <div class="rating">${ratingStars}</div>
+                <p class="description">${description}</p>
+                <p class="price">₹${price}</p>
+                <button class="add-btn" onclick="addToCart('${name.replace(/'/g, "\\'")}', ${price}, '${image.replace(/'/g, "\\'")}')">
+                    Add to Cart
+                </button>
+            </div>
+        `;
+        
+        menuContainer.appendChild(card);
+    });
+}
+
+// ✅ Populate categories
+function populateCategories(data) {
+    if (!data || !categoryFilter) return;
+    
+    categoryFilter.innerHTML = '<option value="All">All Categories</option>';
+    
+    const categories = [...new Set(data.map(item => 
+        item.Category || item.category || "General"
+    ))];
+    
+    categories.forEach(cat => {
+        const option = document.createElement("option");
+        option.value = cat;
+        option.textContent = cat;
+        categoryFilter.appendChild(option);
+    });
+}
+
+// ✅ Filter menu
+function filterMenu() {
+    const category = categoryFilter.value;
+    const searchTerm = searchInput.value.toLowerCase();
+    
+    const filtered = menuData.filter(item => {
+        const itemCategory = item.Category || item.category || "General";
+        const itemName = item.Name || item.name || "";
+        
+        const categoryMatch = category === "All" || itemCategory === category;
+        const searchMatch = itemName.toLowerCase().includes(searchTerm);
+        
+        return categoryMatch && searchMatch;
+    });
+    
+    displayMenu(filtered);
+}
+
+// ✅ Cart functions
+function addToCart(name, price, image = "") {
+    const existingItem = cart.find(item => item.name === name);
+    
+    if (existingItem) {
+        existingItem.quantity += 1;
+    } else {
+        cart.push({
+            name,
+            price,
+            image,
+            quantity: 1
+        });
+    }
+    
+    updateCart();
+    showToast(`${name} added to cart!`);
 }
 
 function removeFromCart(index) {
-  if (index >= 0 && index < cart.length) {
     cart.splice(index, 1);
     updateCart();
-  }
 }
 
 function updateCartQuantity(index, change) {
-  if (cart[index]) {
-    cart[index].quantity = (cart[index].quantity || 1) + change;
-    
-    if (cart[index].quantity <= 0) {
-      cart.splice(index, 1);
+    const item = cart[index];
+    if (item) {
+        item.quantity += change;
+        if (item.quantity <= 0) {
+            cart.splice(index, 1);
+        }
+        updateCart();
     }
-    
-    updateCart();
-  }
 }
 
 function updateCart() {
-  cartItems.innerHTML = "";
-  let total = 0;
-  let itemCount = 0;
-
-  cart.forEach((item, index) => {
-    const itemTotal = item.price * (item.quantity || 1);
-    total += itemTotal;
-    itemCount += (item.quantity || 1);
-
-    const li = document.createElement("li");
-    li.innerHTML = `
-      <div class="cart-item">
-        <span class="cart-item-name">${item.name}</span>
-        <div class="cart-item-controls">
-          <button onclick="updateCartQuantity(${index}, -1)">-</button>
-          <span class="cart-item-quantity">${item.quantity || 1}</span>
-          <button onclick="updateCartQuantity(${index}, 1)">+</button>
-          <span class="cart-item-price">₹${itemTotal}</span>
-          <button class="remove-btn" onclick="removeFromCart(${index})">❌</button>
-        </div>
-      </div>
-    `;
-    cartItems.appendChild(li);
-  });
-
-  cartTotal.textContent = total.toFixed(2);
-  cartCount.textContent = itemCount;
-
-  // Show/hide empty cart message
-  if (cart.length === 0) {
-    cartItems.innerHTML = '<li style="text-align:center; padding: 1rem;">Your cart is empty</li>';
-  }
-}
-
-function showAddToCartAnimation(itemName) {
-  // Create a temporary notification
-  const notification = document.createElement('div');
-  notification.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: #28a745;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 4px;
-    z-index: 1000;
-    animation: slideIn 0.3s ease-out;
-  `;
-  notification.textContent = `✅ ${itemName} added to cart!`;
-  
-  document.body.appendChild(notification);
-  
-  setTimeout(() => {
-    notification.remove();
-  }, 2000);
-}
-
-// ✅ Cart Panel Toggle
-cartBtn.addEventListener("click", () => {
-  cartPanel.classList.toggle("active");
-});
-
-// Close cart when clicking outside
-document.addEventListener('click', (event) => {
-  if (!cartPanel.contains(event.target) && !cartBtn.contains(event.target)) {
-    cartPanel.classList.remove('active');
-  }
-});
-
-// ✅ Place Order
-placeOrderBtn.addEventListener("click", async () => {
-  const name = document.getElementById("userName")?.value.trim();
-  const email = document.getElementById("userEmail")?.value.trim();
-  const table = document.getElementById("userTable")?.value.trim() || "N/A";
-  const note = document.getElementById("userNote")?.value.trim() || "No note";
-
-  if (!name) {
-    alert("⚠️ Please enter your name.");
-    return;
-  }
-
-  if (cart.length === 0) {
-    alert("⚠️ Please add at least one item to your cart.");
-    return;
-  }
-
-  const totalAmount = cart.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0);
-
-  const orderData = {
-    name,
-    email: email || "N/A",
-    table: table || "N/A",
-    note,
-    cart,
-    totalAmount,
-    timestamp: new Date().toISOString()
-  };
-
-  try {
-    // Show loading state
-    placeOrderBtn.disabled = true;
-    placeOrderBtn.textContent = "Placing Order...";
-
-    const response = await fetch(SHEET_URL, {
-      method: "POST",
-      headers: { 
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(orderData),
-    });
-
-    const result = await response.json();
+    if (!cartItems) return;
     
-    if (result.success) {
-      alert("✅ Order placed successfully!");
-      // Reset cart and form
-      cart = [];
-      updateCart();
-      document.getElementById("userName").value = "";
-      document.getElementById("userEmail").value = "";
-      document.getElementById("userTable").value = "";
-      document.getElementById("userNote").value = "";
-      cartPanel.classList.remove("active");
-    } else {
-      throw new Error(result.error || "Failed to place order");
+    cartItems.innerHTML = "";
+    let total = 0;
+    let itemCount = 0;
+    
+    cart.forEach((item, index) => {
+        const itemTotal = item.price * item.quantity;
+        total += itemTotal;
+        itemCount += item.quantity;
+        
+        const li = document.createElement("li");
+        li.className = "cart-item";
+        li.innerHTML = `
+            <div class="cart-item-content">
+                <span class="cart-item-name">${item.name}</span>
+                <div class="cart-item-controls">
+                    <button onclick="updateCartQuantity(${index}, -1)">-</button>
+                    <span class="quantity">${item.quantity}</span>
+                    <button onclick="updateCartQuantity(${index}, 1)">+</button>
+                    <span class="price">₹${itemTotal}</span>
+                    <button class="remove-btn" onclick="removeFromCart(${index})">×</button>
+                </div>
+            </div>
+        `;
+        cartItems.appendChild(li);
+    });
+    
+    if (cartTotal) cartTotal.textContent = total.toFixed(2);
+    if (cartCount) cartCount.textContent = itemCount;
+    
+    if (cart.length === 0) {
+        cartItems.innerHTML = '<li class="empty-cart">Your cart is empty</li>';
     }
-
-  } catch (error) {
-    console.error("Error placing order:", error);
-    alert("❌ Failed to place order. Please check your connection and try again.");
-  } finally {
-    // Reset button state
-    placeOrderBtn.disabled = false;
-    placeOrderBtn.textContent = "Place Order";
-  }
-});
-
-// ✅ Error handler for JSONP
-function handleMenuResponse(data) {
-  // This will be called by the JSONP response
-  console.log("✅ Menu data received:", data);
-  if (data && data.menu) {
-    menuData = data.menu;
-    displayMenu(menuData);
-    populateCategories(menuData);
-  }
 }
 
-// ✅ Initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
-  console.log("🚀 Initializing Digital Menu...");
-  
-  // Add CSS for animations
-  const style = document.createElement('style');
-  style.textContent = `
-    @keyframes slideIn {
-      from { transform: translateX(100%); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
-    }
-    .cart-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 0.5rem;
-      padding: 0.5rem;
-      border-bottom: 1px solid #eee;
-    }
-    .cart-item-controls {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    .cart-item-controls button {
-      padding: 0.2rem 0.5rem;
-      border: 1px solid #ddd;
-      background: white;
-      cursor: pointer;
-      border-radius: 3px;
-    }
-    .cart-item-quantity {
-      min-width: 20px;
-      text-align: center;
-    }
-    .remove-btn {
-      background: #ff4444 !important;
-      color: white;
-      border: none !important;
-    }
-  `;
-  document.head.appendChild(style);
-  
-  // Load the menu
-  loadMenu().catch(error => {
-    console.error("❌ Failed to load menu:", error);
-    menuContainer.innerHTML = `
-      <div style="text-align:center; color:red; padding: 2rem;">
-        <p>⚠️ Failed to load menu.</p>
-        <p>Please check your internet connection and try again.</p>
-        <button onclick="loadMenu()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
-          Retry
-        </button>
-      </div>
+function showToast(message) {
+    const toast = document.createElement("div");
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #4CAF50;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 4px;
+        z-index: 1000;
+        animation: slideInRight 0.3s ease-out;
     `;
-  });
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
+function showMenuError() {
+    if (!menuContainer) return;
+    
+    menuContainer.innerHTML = `
+        <div class="error-message">
+            <h3>😕 Menu Not Available</h3>
+            <p>We're having trouble loading the menu right now.</p>
+            <button onclick="loadMenu()" class="retry-btn">Try Again</button>
+        </div>
+    `;
+}
+
+// ✅ Event listeners
+if (categoryFilter) {
+    categoryFilter.addEventListener("change", filterMenu);
+}
+
+if (searchInput) {
+    searchInput.addEventListener("input", filterMenu);
+}
+
+if (cartBtn) {
+    cartBtn.addEventListener("click", () => {
+        cartPanel.classList.toggle("active");
+    });
+}
+
+if (placeOrderBtn) {
+    placeOrderBtn.addEventListener("click", placeOrder);
+}
+
+// ✅ Place order function
+async function placeOrder() {
+    const name = document.getElementById("userName")?.value.trim();
+    const email = document.getElementById("userEmail")?.value.trim();
+    const table = document.getElementById("userTable")?.value.trim() || "N/A";
+    const note = document.getElementById("userNote")?.value.trim() || "No note";
+
+    if (!name) {
+        alert("Please enter your name");
+        return;
+    }
+
+    if (cart.length === 0) {
+        alert("Please add items to your cart");
+        return;
+    }
+
+    const orderData = {
+        name,
+        email: email || "N/A",
+        table,
+        note,
+        cart,
+        totalAmount: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+    };
+
+    try {
+        placeOrderBtn.disabled = true;
+        placeOrderBtn.textContent = "Placing Order...";
+
+        const response = await fetch(SHEET_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(orderData)
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+            alert("Order placed successfully!");
+            cart = [];
+            updateCart();
+            // Clear form fields
+            document.getElementById("userName").value = "";
+            document.getElementById("userEmail").value = "";
+            document.getElementById("userTable").value = "";
+            document.getElementById("userNote").value = "";
+            cartPanel.classList.remove("active");
+        } else {
+            throw new Error(result.error);
+        }
+    } catch (error) {
+        console.error("Order error:", error);
+        alert("Failed to place order. Please try again.");
+    } finally {
+        placeOrderBtn.disabled = false;
+        placeOrderBtn.textContent = "Place Order";
+    }
+}
+
+// ✅ Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("🚀 Yadava's Menu Initializing...");
+    
+    // Add custom styles
+    const styles = `
+        <style>
+            .error-message {
+                text-align: center;
+                padding: 3rem 1rem;
+                color: #666;
+            }
+            .error-message h3 {
+                margin-bottom: 1rem;
+                color: #ff4444;
+            }
+            .retry-btn {
+                background: #007bff;
+                color: white;
+                border: none;
+                padding: 0.75rem 1.5rem;
+                border-radius: 4px;
+                cursor: pointer;
+                margin-top: 1rem;
+            }
+            .retry-btn:hover {
+                background: #0056b3;
+            }
+            .category-tag {
+                background: #e9ecef;
+                color: #495057;
+                padding: 0.25rem 0.5rem;
+                border-radius: 12px;
+                font-size: 0.8rem;
+                display: inline-block;
+                margin: 0.25rem 0;
+            }
+            @keyframes slideInRight {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            .empty-cart {
+                text-align: center;
+                color: #666;
+                padding: 2rem;
+            }
+        </style>
+    `;
+    document.head.insertAdjacentHTML('beforeend', styles);
+    
+    // Load the menu
+    loadMenu().catch(error => {
+        console.error("Initialization error:", error);
+    });
 });
