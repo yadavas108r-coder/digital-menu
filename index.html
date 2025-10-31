@@ -9,17 +9,15 @@
 </head>
 <body>
   <header>
-    <div class="header-left">
-      <h1>🍴 Yadava’s Menu</h1>
-    </div>
-    <div class="header-center">
+    <div class="logo">🍴 Yadava’s Menu</div>
+    <div class="filters">
       <input type="text" id="searchInput" placeholder="Search dishes..." />
       <select id="categoryFilter">
         <option value="All">All Categories</option>
       </select>
     </div>
-    <div class="header-right">
-      <button id="cartIconBtn">🛒 (<span id="cartCount">0</span>)</button>
+    <div class="cart-btn">
+      <button id="cartIconBtn">🛒 <span id="cartCount">0</span></button>
     </div>
   </header>
 
@@ -30,7 +28,6 @@
       <h2>🛍️ Your Cart</h2>
       <ul id="cartItems"></ul>
       <p class="total">Total: ₹<span id="cartTotal">0</span></p>
-
       <input type="text" id="userName" placeholder="Your Name" />
       <input type="email" id="userEmail" placeholder="Email (optional)" />
       <textarea id="userNote" placeholder="Special Note (optional)"></textarea>
