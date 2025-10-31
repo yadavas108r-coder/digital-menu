@@ -5,7 +5,12 @@ async function loadMenu() {
   const res = await fetch(SCRIPT_URL);
   menuData = await res.json();
 
-  // Load category filter
+  // Add fake random ratings if not present
+  menuData.forEach(item => {
+    item.Rating = item.Rating ? Number(item.Rating) : Math.floor(Math.random() * 2) + 4; // 4–5 stars
+  });
+
+  // Load categories
   const categories = [...new Set(menuData.map(i => i.Category))];
   const select = document.getElementById("categoryFilter");
   categories.forEach(cat => {
@@ -21,10 +26,24 @@ async function loadMenu() {
 function renderMenu(data) {
   const container = document.getElementById("menuContainer");
   container.innerHTML = "";
+
+  if (data.length === 0) {
+    container.innerHTML = "<p style='text-align:center;'>No dishes found 😔</p>";
+    return;
+  }
+
   data.forEach(item => {
-    const typeIcon = item.Type.toLowerCase() === "veg"
-      ? '<span class="veg-icon"></span>'
-      : '<span class="nonveg-icon"></span>';
+    const typeIcon =
+      item.Type.toLowerCase() === "veg"
+        ? '<span class="veg-icon"></span>'
+        : '<span class="nonveg-icon"></span>';
+
+    const stars = Array(5)
+      .fill(0)
+      .map((_, i) =>
+        i < item.Rating ? '<span class="star">★</span>' : '<span class="star off">★</span>'
+      )
+      .join("");
 
     const card = document.createElement("div");
     card.classList.add("card");
@@ -32,6 +51,7 @@ function renderMenu(data) {
       <img src="${item.Image}" alt="${item.Name}" />
       <div class="card-content">
         <h3>${typeIcon}${item.Name}</h3>
+        <div class="card-rating">${stars} <small>(${item.Rating}.0)</small></div>
         <p class="price">₹${item.Price}</p>
         <p>${item.Description}</p>
         <button onclick="addToCart('${item.Name}', ${item.Price})">Add</button>
@@ -41,12 +61,37 @@ function renderMenu(data) {
   });
 }
 
+// 🔸 Category Filter
 document.getElementById("categoryFilter").addEventListener("change", e => {
   const val = e.target.value;
-  if (val === "all") renderMenu(menuData);
-  else renderMenu(menuData.filter(i => i.Category === val));
+  const searchValue = document.getElementById("searchBar").value.toLowerCase();
+
+  const filtered = menuData.filter(i => {
+    const matchCategory = val === "all" || i.Category === val;
+    const matchSearch = i.Name.toLowerCase().includes(searchValue);
+    return matchCategory && matchSearch;
+  });
+
+  renderMenu(filtered);
 });
 
+// 🔸 Search Functionality
+document.getElementById("searchBar").addEventListener("input", e => {
+  const searchValue = e.target.value.toLowerCase();
+  const categoryVal = document.getElementById("categoryFilter").value;
+
+  const filtered = menuData.filter(i => {
+    const matchCategory = categoryVal === "all" || i.Category === categoryVal;
+    const matchSearch =
+      i.Name.toLowerCase().includes(searchValue) ||
+      (i.Description && i.Description.toLowerCase().includes(searchValue));
+    return matchCategory && matchSearch;
+  });
+
+  renderMenu(filtered);
+});
+
+// 🛒 Add to Cart
 function addToCart(name, price) {
   const existing = cart.find(i => i.name === name);
   if (existing) existing.qty++;
@@ -73,6 +118,7 @@ function updateCart() {
   document.getElementById("totalAmount").textContent = total;
 }
 
+// ✅ Place Order (POST to Apps Script)
 document.getElementById("placeOrder").addEventListener("click", async () => {
   const name = document.getElementById("customerName").value.trim();
   const email = document.getElementById("customerEmail").value.trim();
