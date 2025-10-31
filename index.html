@@ -1,44 +1,64 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>🍴 Yadava’s Menu</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Yadava’s Menu</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header>
-    <h1>🍴 Yadava’s Menu</h1>
-    <div class="header-controls">
-      <input type="text" id="searchBar" placeholder="Search dishes..." />
+    <div class="left-head">
+      <h1>🍴 Yadava’s</h1>
+    </div>
+
+    <div class="search-bar" style="align-items:center">
+      <input id="searchBar" type="text" placeholder="Search dishes, ingredients..." />
       <select id="categoryFilter">
         <option value="all">All Categories</option>
       </select>
     </div>
+
+    <div class="right-head" style="display:flex; align-items:center; gap:16px;">
+      <div class="cart-icon" id="cartIcon" title="Open cart">
+        🛒
+        <div class="cart-count" id="cartCount">0</div>
+      </div>
+    </div>
   </header>
 
+  <!-- Category chips (optional) -->
+  <div class="category-buttons" id="categoryButtons" style="padding: 10px 20px;"></div>
+
   <main>
-    <section id="menuContainer"></section>
-    <aside id="cart">
-      <h2>🛒 Your Cart</h2>
-      <div id="cartItems"></div>
-      <div class="cart-total">
-        <p>Total: ₹<span id="totalAmount">0</span></p>
-        <input type="text" id="customerName" placeholder="Your Name" />
-        <input type="email" id="customerEmail" placeholder="Email (optional)" />
-        <textarea id="customerReview" placeholder="Special Note (optional)"></textarea>
-        <button id="placeOrder">Place Order</button>
-      </div>
+    <section id="menuSection" class="menu-container"></section>
+
+    <!-- Cart Drawer -->
+    <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
+      <h2>Your Cart</h2>
+
+      <div class="cart-items" id="cartItems"></div>
+
+      <div class="cart-total" id="cartTotal">Total: ₹0</div>
+
+      <input id="customerName" type="text" placeholder="Your name *" />
+      <input id="customerEmail" type="email" placeholder="Email (optional)" />
+      <textarea id="customerNote" placeholder="Special note (optional)"></textarea>
+
+      <button id="placeOrderBtn" class="place-order-btn">Place Order</button>
+      <button id="closeCartBtn" style="margin-top:8px; background:#f0f0f0;color:#333;padding:8px;border-radius:6px;border:none;cursor:pointer;">Close</button>
     </aside>
   </main>
 
   <footer>
-    <p>© 2025 Yadava’s | Powered by Sanatan Energy 🍃</p>
+    <p>© 2025 Yadava’s | Built with ❤️</p>
   </footer>
 
   <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwVFdvGohTuO7Nr4DKjT4zbHZ48bv4CE1NfJDiFtnk0NGlUEtT7bKOct-F-HRbmHQ4I/exec"; // 🔗 Replace with Apps Script URL
+    // ======= IMPORTANT: Replace with your Apps Script Web App exec URL =======
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwVFdvGohTuO7Nr4DKjT4zbHZ48bv4CE1NfJDiFtnk0NGlUEtT7bKOct-F-HRbmHQ4I/exec";
   </script>
   <script src="script.js"></script>
 </body>
 </html>
+
