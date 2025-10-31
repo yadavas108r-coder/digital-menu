@@ -1,4 +1,4 @@
-const SHEET_URL = "https://script.google.com/macros/s/AKfycbwUAAH-m_pflrO0wcd60xpRtQajmQINUXo62ts0qMSVlLdgA1PvhnWVWsZhEVjdznEF/exec";
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbwVFdvGohTuO7Nr4DKjT4zbHZ48bv4CE1NfJDiFtnk0NGlUEtT7bKOct-F-HRbmHQ4I/exec";
 
 const menuContainer = document.getElementById("menu");
 const categoryFilter = document.getElementById("categoryFilter");
@@ -29,13 +29,20 @@ function displayMenu(items) {
   items.forEach(item => {
     const card = document.createElement("div");
     card.classList.add("menu-item");
+    const vegIcon = item.Type?.toLowerCase() === "veg" ? "🟢" : "🔴";
+    const ratingStars = "⭐".repeat(Math.floor(item.Rating || 4));
+
     card.innerHTML = `
       <img src="${item.Image}" alt="${item.Name}">
       <div class="menu-details">
-        <h3>${item.Name}</h3>
+        <div class="menu-top">
+          <h3>${item.Name}</h3>
+          <span class="veg-icon">${vegIcon}</span>
+        </div>
+        <div class="rating">${ratingStars}</div>
         <p>${item.Description}</p>
         <p class="price">₹${item.Price}</p>
-        <button class="add-btn" onclick="addToCart('${item.Name}', ${item.Price})">Add</button>
+        <button class="add-btn" onclick="addToCart('${item.Name}', ${item.Price})">Add to Cart</button>
       </div>`;
     menuContainer.appendChild(card);
   });
@@ -51,25 +58,19 @@ function populateCategories(data) {
   });
 }
 
-categoryFilter.addEventListener("change", () => {
-  const cat = categoryFilter.value;
-  const searchTerm = searchInput.value.toLowerCase();
-  let filtered = menuData.filter(item =>
-    (cat === "All" || item.Category === cat) &&
-    item.Name.toLowerCase().includes(searchTerm)
-  );
-  displayMenu(filtered);
-});
+categoryFilter.addEventListener("change", filterMenu);
+searchInput.addEventListener("input", filterMenu);
 
-searchInput.addEventListener("input", () => {
-  const searchTerm = searchInput.value.toLowerCase();
+function filterMenu() {
   const cat = categoryFilter.value;
-  let filtered = menuData.filter(item =>
-    (cat === "All" || item.Category === cat) &&
-    item.Name.toLowerCase().includes(searchTerm)
+  const searchTerm = searchInput.value.toLowerCase();
+  const filtered = menuData.filter(
+    item =>
+      (cat === "All" || item.Category === cat) &&
+      item.Name.toLowerCase().includes(searchTerm)
   );
   displayMenu(filtered);
-});
+}
 
 function addToCart(name, price) {
   cart.push({ name, price });
@@ -79,7 +80,7 @@ function addToCart(name, price) {
 function updateCart() {
   cartItems.innerHTML = "";
   let total = 0;
-  cart.forEach((item, i) => {
+  cart.forEach((item) => {
     total += item.price;
     const li = document.createElement("li");
     li.textContent = `${item.name} - ₹${item.price}`;
@@ -94,5 +95,3 @@ cartBtn.addEventListener("click", () => {
 });
 
 loadMenu();
-
-
