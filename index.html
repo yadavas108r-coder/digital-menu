@@ -1,27 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🍧 Yadava’s Digital Menu</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Yadava’s Digital Menu</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header>
-    <h1>🍨 Yadava’s Ice Cream Menu</h1>
-    <div id="cart-icon">🛒 <span id="cart-count">0</span></div>
+    <div class="logo">
+      <img src="https://cdn-icons-png.flaticon.com/512/2921/2921820.png" alt="logo" />
+      <h1>Yadava’s</h1>
+    </div>
+    <div id="cart-icon">
+      🛒 <span id="cart-count">0</span>
+    </div>
   </header>
 
   <main>
     <div id="menu" class="menu-container"></div>
+
+    <div id="cart-modal" class="cart-modal hidden">
+      <div class="cart-content">
+        <h2>Your Order</h2>
+        <ul id="cart-items"></ul>
+        <p id="total">Total: ₹0</p>
+        <input type="text" id="customerName" placeholder="Enter your name" />
+        <input type="text" id="tableNo" placeholder="Table number (optional)" />
+        <textarea id="review" placeholder="Write your review (optional)"></textarea>
+        <button id="placeOrder">Place Order</button>
+        <button id="closeCart">Close</button>
+      </div>
+    </div>
   </main>
 
   <footer>
-    <p>© 2025 Yadava’s Ice Creams</p>
+    <p>Made with ❤️ by Yadava’s</p>
   </footer>
 
-  <!-- ✅ Always at the end -->
   <script src="script.js"></script>
 </body>
 </html>
-
