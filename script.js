@@ -6,7 +6,7 @@ const cartCount = document.getElementById("cart-count");
 
 let cart = [];
 
-// ✅ Load menu from Google Sheet
+// ✅ Load products from Google Sheet
 async function loadMenu() {
   try {
     const response = await fetch(SHEET_URL);
@@ -15,8 +15,6 @@ async function loadMenu() {
     menuContainer.innerHTML = "";
 
     data.forEach((item) => {
-      if (!item.Name || !item.Image) return;
-
       const card = document.createElement("div");
       card.classList.add("product-card");
 
@@ -24,8 +22,8 @@ async function loadMenu() {
         <img src="${item.Image}" alt="${item.Name}">
         <div class="product-info">
           <h3>${item.Name}</h3>
-          <p class="category">${item.Category || "Other"}</p>
-          <p class="desc">${item.Description || ""}</p>
+          <p class="category">${item.Category || ""}</p>
+          <p>${item.Description || ""}</p>
           <p class="price">₹${item.Price}</p>
           <button onclick="addToCart('${item.Name}', ${item.Price})">Add to Cart</button>
         </div>
@@ -38,19 +36,13 @@ async function loadMenu() {
   }
 }
 
-// ✅ Add to Cart Function
 function addToCart(name, price) {
   cart.push({ name, price });
   updateCart();
 }
 
-// ✅ Update Cart Count
 function updateCart() {
-  if (cartCount) {
-    cartCount.textContent = cart.length;
-  }
+  cartCount.textContent = cart.length;
 }
 
-// ✅ Load menu on page load
 window.onload = loadMenu;
-
