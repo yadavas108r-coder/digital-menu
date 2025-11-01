@@ -75,7 +75,7 @@ function loadMenu() {
     });
 }
 
-// ✅ Display menu items - FIXED IMAGE HANDLING
+// ✅ FIXED: Display menu items with BETTER IMAGE HANDLING
 function displayMenu(items) {
     if (!menuContainer) {
         console.error("❌ Menu container not found");
@@ -104,9 +104,12 @@ function displayMenu(items) {
         const price = item.Price || item.price || 0;
         const description = item.Description || item.description || "Delicious item from Yadava's";
         
-        // ✅ FIXED: Better image handling with proper fallback
-        let image = item.Image || item.image || "";
-        if (!image || image.trim() === "") {
+        // ✅ FIXED: Better image handling - check multiple column names
+        let image = item.Image || item.image || item.Img || item.Picture || item.picture || "";
+        console.log(`🖼️ Processing image for ${name}:`, image);
+        
+        // If no image URL or empty string, use placeholder
+        if (!image || image.trim() === "" || image === "N/A") {
             image = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNENBRjUwIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIwLjNlbSI+WWFkYXZhJ3MgTWVudTwvdGV4dD4KPC9zdmc+";
         }
         
@@ -121,7 +124,8 @@ function displayMenu(items) {
             <div class="menu-card">
                 <div class="image-container">
                     <img src="${image}" alt="${name}" 
-                         onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNENBRjUwIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIwLjNlbSI+WWFkYXZhJ3MgTWVudTwvdGV4dD4KPC9zdmc+'">
+                         onerror="handleImageError(this)"
+                         onload="handleImageLoad(this)">
                 </div>
                 <div class="menu-details">
                     <div class="menu-header">
@@ -143,6 +147,17 @@ function displayMenu(items) {
         
         menuContainer.appendChild(card);
     });
+}
+
+// ✅ NEW: Handle image loading errors
+function handleImageError(img) {
+    console.log("❌ Image failed to load:", img.src);
+    img.src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNENBRjUwIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIwLjNlbSI+WWFkYXZhJ3MgTWVudTwvdGV4dD4KPC9zdmc+";
+}
+
+// ✅ NEW: Handle successful image load
+function handleImageLoad(img) {
+    console.log("✅ Image loaded successfully:", img.src);
 }
 
 // ✅ Populate categories
@@ -407,4 +422,3 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error("Initialization error:", error);
     });
 });
-
