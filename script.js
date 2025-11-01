@@ -75,7 +75,7 @@ function loadMenu() {
     });
 }
 
-// ✅ Display menu items - HANDLES YOUR EXACT COLUMN NAMES
+// ✅ Display menu items - FIXED IMAGE HANDLING
 function displayMenu(items) {
     if (!menuContainer) {
         console.error("❌ Menu container not found");
@@ -103,7 +103,13 @@ function displayMenu(items) {
         const name = item.Name || item.name || `Item ${index + 1}`;
         const price = item.Price || item.price || 0;
         const description = item.Description || item.description || "Delicious item from Yadava's";
-        const image = item.Image || item.image || "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNENBRjUwIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIwLjNlbSI+WWFkYXZhJ3MgTWVudTwvdGV4dD4KPC9zdmc+";
+        
+        // ✅ FIXED: Better image handling with proper fallback
+        let image = item.Image || item.image || "";
+        if (!image || image.trim() === "") {
+            image = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNENBRjUwIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIwLjNlbSI+WWFkYXZhJ3MgTWVudTwvdGV4dD4KPC9zdmc+";
+        }
+        
         const category = item.Category || item.category || "General";
         const type = (item.Type || item.type || "veg").toLowerCase();
         
@@ -113,8 +119,10 @@ function displayMenu(items) {
 
         card.innerHTML = `
             <div class="menu-card">
-                <img src="${image}" alt="${name}" 
-                     onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNENBRjUwIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIwLjNlbSI+WWFkYXZhJ3MgTWVudTwvdGV4dD4KPC9zdmc+'">
+                <div class="image-container">
+                    <img src="${image}" alt="${name}" 
+                         onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNENBRjUwIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIwLjNlbSI+WWFkYXZhJ3MgTWVudTwvdGV4dD4KPC9zdmc+'">
+                </div>
                 <div class="menu-details">
                     <div class="menu-header">
                         <h3>${name}</h3>
@@ -393,84 +401,6 @@ function placeOrder() {
 // ✅ Initialize when page loads
 document.addEventListener('DOMContentLoaded', function() {
     console.log("🚀 Yadava's Menu Initializing...");
-    
-    // Add custom styles
-    const styles = `
-        <style>
-            .error-message {
-                text-align: center;
-                padding: 3rem 1rem;
-                color: #666;
-            }
-            .error-message h3 {
-                margin-bottom: 1rem;
-                color: #ff4444;
-            }
-            .retry-btn {
-                background: #007bff;
-                color: white;
-                border: none;
-                padding: 0.75rem 1.5rem;
-                border-radius: 4px;
-                cursor: pointer;
-                margin-top: 1rem;
-            }
-            .retry-btn:hover {
-                background: #0056b3;
-            }
-            .category {
-                background: #e9ecef;
-                color: #495057;
-                padding: 0.25rem 0.5rem;
-                border-radius: 12px;
-                font-size: 0.8rem;
-                display: inline-block;
-                margin: 0.25rem 0;
-            }
-            @keyframes slideInRight {
-                from { transform: translateX(100%); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
-            }
-            .empty-cart {
-                text-align: center;
-                color: #666;
-                padding: 2rem;
-            }
-            .empty-state {
-                text-align: center;
-                padding: 3rem 1rem;
-                color: #666;
-            }
-            .cart-item-content {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                width: 100%;
-            }
-            .cart-item-controls {
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
-            }
-            .cart-item-controls button {
-                padding: 0.2rem 0.5rem;
-                border: 1px solid #ddd;
-                background: white;
-                cursor: pointer;
-                border-radius: 3px;
-            }
-            .remove-btn {
-                background: #ff4444 !important;
-                color: white;
-                border: none !important;
-            }
-            .quantity {
-                min-width: 20px;
-                text-align: center;
-            }
-        </style>
-    `;
-    document.head.insertAdjacentHTML('beforeend', styles);
     
     // Load the menu
     loadMenu().catch(error => {
