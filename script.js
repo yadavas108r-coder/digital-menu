@@ -1,5 +1,5 @@
 // ✅ Use your Google Apps Script URL
-const SHEET_URL = "https://script.google.com/macros/s/AKfycbx6CEh41tmxXvt5OUuw4Pva9IualI5eR0rNjwKyzPe35iNLZlNcRZTFUN7ZfhOfAflH/exec";
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbwBSG7vXPOSKeFHPGbF3l5lR8Eg4f00D3GSvfXgvfz29rCkpKgDR9_E71oQQuPepZ2k/exec";
 
 // DOM Elements
 const menuContainer = document.getElementById("menu");
@@ -75,7 +75,7 @@ function loadMenu() {
     });
 }
 
-// ✅ Display menu items
+// ✅ Display menu items - HANDLES YOUR EXACT COLUMN NAMES
 function displayMenu(items) {
     if (!menuContainer) {
         console.error("❌ Menu container not found");
@@ -99,16 +99,17 @@ function displayMenu(items) {
         const card = document.createElement("div");
         card.className = "menu-item";
         
-        const name = item.Name || item.name || item.Item || `Item ${index + 1}`;
-        const price = item.Price || item.price || item.Cost || 0;
-        const description = item.Description || item.description || item.Desc || "Delicious item from Yadava's";
-        const image = item.Image || item.image || item.Img || "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNENBRjUwIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIwLjNlbSI+WWFkYXZhJ3MgTWVudTwvdGV4dD4KPC9zdmc+";
-        const type = (item.Type || item.type || item.VegNonVeg || "veg").toLowerCase();
-        const category = item.Category || item.category || item.Cat || "General";
+        // ✅ USE YOUR EXACT COLUMN NAMES: Name, Price, Image, Category, Description, Type
+        const name = item.Name || item.name || `Item ${index + 1}`;
+        const price = item.Price || item.price || 0;
+        const description = item.Description || item.description || "Delicious item from Yadava's";
+        const image = item.Image || item.image || "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNENBRjUwIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIwLjNlbSI+WWFkYXZhJ3MgTWVudTwvdGV4dD4KPC9zdmc+";
+        const category = item.Category || item.category || "General";
+        const type = (item.Type || item.type || "veg").toLowerCase();
         
         const vegIcon = type === "veg" || type === "vegetarian" ? "🟢" : "🔴";
-        const rating = item.Rating || item.rating || item.Stars || 4;
-        const ratingStars = "⭐".repeat(Math.min(5, Math.max(1, Math.floor(rating))));
+        // Since Rating column doesn't exist in your sheet, use default
+        const ratingStars = "⭐⭐⭐⭐";
 
         card.innerHTML = `
             <div class="menu-card">
@@ -143,7 +144,7 @@ function populateCategories(data) {
     categoryFilter.innerHTML = '<option value="All">All Categories</option>';
     
     const categories = [...new Set(data.map(item => 
-        item.Category || item.category || item.Cat || "General"
+        item.Category || item.category || "General"
     ).filter(Boolean))];
     
     categories.forEach(cat => {
@@ -160,8 +161,8 @@ function filterMenu() {
     const searchTerm = searchInput.value.toLowerCase();
     
     const filtered = menuData.filter(item => {
-        const itemCategory = item.Category || item.category || item.Cat || "General";
-        const itemName = item.Name || item.name || item.Item || "";
+        const itemCategory = item.Category || item.category || "General";
+        const itemName = item.Name || item.name || "";
         
         const categoryMatch = category === "All" || itemCategory === category;
         const searchMatch = itemName.toLowerCase().includes(searchTerm);
@@ -302,7 +303,7 @@ if (placeOrderBtn) {
     placeOrderBtn.addEventListener("click", placeOrder);
 }
 
-// ✅ SIMPLIFIED: Place order function
+// ✅ FIXED: Place order function with safe form field handling
 function placeOrder() {
     const name = document.getElementById("userName")?.value.trim();
     const email = document.getElementById("userEmail")?.value.trim();
@@ -323,7 +324,7 @@ function placeOrder() {
         name: name,
         email: email || "N/A",
         table: table,
-        note: note,
+        review: note, // Using note as review since that's your column name
         cart: cart,
         totalAmount: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
     };
@@ -343,22 +344,32 @@ function placeOrder() {
         
         // Clean up
         delete window[callbackName];
-        document.body.removeChild(script);
+        if (script.parentNode) {
+            document.body.removeChild(script);
+        }
         
         // Reset button
         placeOrderBtn.disabled = false;
         placeOrderBtn.textContent = "Place Order";
         
         if (response && response.success) {
-            alert("✅ Order placed successfully!");
-            // Clear cart and form
+            alert("✅ " + (response.message || "Order placed successfully!"));
+            // Clear cart and form SAFELY
             cart = [];
             updateCart();
-            document.getElementById("userName").value = "";
-            document.getElementById("userEmail").value = "";
-            document.getElementById("userTable").value = "";
-            document.getElementById("userNote").value = "";
-            cartPanel.classList.remove("active");
+            
+            // ✅ SAFELY clear form fields (only if they exist)
+            const userNameField = document.getElementById("userName");
+            const userEmailField = document.getElementById("userEmail");
+            const userTableField = document.getElementById("userTable");
+            const userNoteField = document.getElementById("userNote");
+            
+            if (userNameField) userNameField.value = "";
+            if (userEmailField) userEmailField.value = "";
+            if (userTableField) userTableField.value = "";
+            if (userNoteField) userNoteField.value = "";
+            
+            if (cartPanel) cartPanel.classList.remove("active");
         } else {
             alert("❌ " + (response?.error || "Failed to place order"));
         }
@@ -366,105 +377,17 @@ function placeOrder() {
     
     script.onerror = function() {
         delete window[callbackName];
-        document.body.removeChild(script);
+        if (script.parentNode) {
+            document.body.removeChild(script);
+        }
         placeOrderBtn.disabled = false;
         placeOrderBtn.textContent = "Place Order";
         alert("❌ Network error - please try again");
     };
     
     const encodedData = encodeURIComponent(JSON.stringify(orderData));
-    script.src = `${SHEET_URL}?action=submitOrder&orderData=${encodedData}&callback=${callbackName}`;
+    script.src = `${SHEET_URL}?action=submitOrder&orderData=${encodedData}&callback=${callbackName}&t=${Date.now()}`;
     document.body.appendChild(script);
-}
-// ✅ FIXED: JSONP method for placing orders
-function placeOrderWithJSONP(orderData) {
-    return new Promise((resolve, reject) => {
-        const callbackName = 'orderCallback_' + Date.now();
-        const script = document.createElement('script');
-        
-        // Show loading state
-        placeOrderBtn.disabled = true;
-        placeOrderBtn.textContent = "Placing Order...";
-
-        // Define the callback function
-        window[callbackName] = function(response) {
-            console.log("📦 Order response received:", response);
-            
-            // Clean up
-            delete window[callbackName];
-            if (script.parentNode) {
-                document.body.removeChild(script);
-            }
-            
-            // Reset button state
-            placeOrderBtn.disabled = false;
-            placeOrderBtn.textContent = "Place Order";
-            
-            if (response && response.success) {
-                console.log("✅ Order successful:", response);
-                alert("✅ " + (response.message || "Order placed successfully!"));
-                
-                // Clear cart and form
-                cart = [];
-                updateCart();
-                document.getElementById("userName").value = "";
-                document.getElementById("userEmail").value = "";
-                document.getElementById("userTable").value = "";
-                document.getElementById("userNote").value = "";
-                cartPanel.classList.remove("active");
-                
-                resolve(response);
-            } else {
-                const errorMsg = response?.error || 'Failed to place order';
-                console.error("❌ Order failed:", errorMsg);
-                alert("❌ " + errorMsg);
-                reject(new Error(errorMsg));
-            }
-        };
-        
-        // Set up error handling
-        script.onerror = function() {
-            console.error("❌ Order script loading failed");
-            delete window[callbackName];
-            if (script.parentNode) {
-                document.body.removeChild(script);
-            }
-            
-            // Reset button state
-            placeOrderBtn.disabled = false;
-            placeOrderBtn.textContent = "Place Order";
-            
-            alert("❌ Network error - cannot place order. Please check your connection.");
-            reject(new Error('Failed to place order'));
-        };
-        
-        // Create the script URL with order data as parameter
-        const encodedOrderData = encodeURIComponent(JSON.stringify(orderData));
-        const url = `${SHEET_URL}?action=submitOrder&orderData=${encodedOrderData}&callback=${callbackName}&t=${Date.now()}`;
-        
-        console.log("🔗 Placing order via URL:", url);
-        script.src = url;
-        
-        document.body.appendChild(script);
-        
-        // Timeout after 30 seconds
-        setTimeout(() => {
-            if (window[callbackName]) {
-                console.error("⏰ Order placement timeout");
-                delete window[callbackName];
-                if (script.parentNode) {
-                    document.body.removeChild(script);
-                }
-                
-                // Reset button state
-                placeOrderBtn.disabled = false;
-                placeOrderBtn.textContent = "Place Order";
-                
-                alert("❌ Order timeout - please try again");
-                reject(new Error('Order placement timeout'));
-            }
-        }, 30000);
-    });
 }
 
 // ✅ Initialize when page loads
@@ -554,4 +477,3 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error("Initialization error:", error);
     });
 });
-
