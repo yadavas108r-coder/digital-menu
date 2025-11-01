@@ -1,5 +1,5 @@
 // ✅ Use your Google Apps Script URL
-const SHEET_URL = "https://script.google.com/macros/s/AKfycbz9heKlGa7lqCfULbJArGQY_EGFFIpAS-8nAGcQ_QkmVUU6HmpIR-JFajbUKUzccEmP/exec";
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbx6CEh41tmxXvt5OUuw4Pva9IualI5eR0rNjwKyzPe35iNLZlNcRZTFUN7ZfhOfAflH/exec";
 
 // DOM Elements
 const menuContainer = document.getElementById("menu");
@@ -302,7 +302,7 @@ if (placeOrderBtn) {
     placeOrderBtn.addEventListener("click", placeOrder);
 }
 
-// ✅ FIXED: Place order function
+// ✅ SIMPLIFIED: Place order function
 function placeOrder() {
     const name = document.getElementById("userName")?.value.trim();
     const email = document.getElementById("userEmail")?.value.trim();
@@ -329,9 +329,53 @@ function placeOrder() {
     };
 
     console.log("🛒 Placing order:", orderData);
-    placeOrderWithJSONP(orderData);
-}
+    
+    // Show loading state
+    placeOrderBtn.disabled = true;
+    placeOrderBtn.textContent = "Placing Order...";
 
+    // Create script for JSONP
+    const callbackName = 'orderCallback_' + Date.now();
+    const script = document.createElement('script');
+    
+    window[callbackName] = function(response) {
+        console.log("📦 Order response:", response);
+        
+        // Clean up
+        delete window[callbackName];
+        document.body.removeChild(script);
+        
+        // Reset button
+        placeOrderBtn.disabled = false;
+        placeOrderBtn.textContent = "Place Order";
+        
+        if (response && response.success) {
+            alert("✅ Order placed successfully!");
+            // Clear cart and form
+            cart = [];
+            updateCart();
+            document.getElementById("userName").value = "";
+            document.getElementById("userEmail").value = "";
+            document.getElementById("userTable").value = "";
+            document.getElementById("userNote").value = "";
+            cartPanel.classList.remove("active");
+        } else {
+            alert("❌ " + (response?.error || "Failed to place order"));
+        }
+    };
+    
+    script.onerror = function() {
+        delete window[callbackName];
+        document.body.removeChild(script);
+        placeOrderBtn.disabled = false;
+        placeOrderBtn.textContent = "Place Order";
+        alert("❌ Network error - please try again");
+    };
+    
+    const encodedData = encodeURIComponent(JSON.stringify(orderData));
+    script.src = `${SHEET_URL}?action=submitOrder&orderData=${encodedData}&callback=${callbackName}`;
+    document.body.appendChild(script);
+}
 // ✅ FIXED: JSONP method for placing orders
 function placeOrderWithJSONP(orderData) {
     return new Promise((resolve, reject) => {
@@ -510,3 +554,4 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error("Initialization error:", error);
     });
 });
+
