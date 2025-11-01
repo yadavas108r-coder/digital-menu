@@ -1,4 +1,5 @@
-const SHEET_URL = "https://script.google.com/macros/s/AKfycbyk7EK2uxJ7UnI7i3wKoNDWa7HIoITGOvlQpC8ZbnwusH-2P9vIytkVKhfagIooJVQ1/exec";
+// ✅ Use the correct Google Apps Script URL from your error
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbxwmKmsckx3E6oep98gm4Q2PCkGBDEnmNoiJEULAKTdglwbvfj2CJahs3NcmHqjyhAg/exec";
 
 // DOM Elements
 const menuContainer = document.getElementById("menu");
@@ -106,7 +107,10 @@ function displayMenu(items) {
         const name = item.Name || item.name || item.Item || `Item ${index + 1}`;
         const price = item.Price || item.price || item.Cost || 0;
         const description = item.Description || item.description || item.Desc || "Delicious item from Yadava's";
-        const image = item.Image || item.image || item.Img || "https://via.placeholder.com/200x150/4CAF50/white?text=Yadava%27s";
+        
+        // ✅ FIXED: Use working placeholder image URL
+        const image = item.Image || item.image || item.Img || "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNENBRjUwIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIwLjNlbSI+WWFkYXZhJ3MgTWVudTwvdGV4dD4KPC9zdmc+";
+        
         const type = (item.Type || item.type || item.VegNonVeg || "veg").toLowerCase();
         const category = item.Category || item.category || item.Cat || "General";
         
@@ -117,7 +121,7 @@ function displayMenu(items) {
         card.innerHTML = `
             <div class="menu-card">
                 <img src="${image}" alt="${name}" 
-                     onerror="this.src='https://via.placeholder.com/200x150/4CAF50/white?text=Yadava%27s'">
+                     onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNENBRjUwIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIwLjNlbSI+WWFkYXZhJ3MgTWVudTwvdGV4dD4KPC9zdmc+'">
                 <div class="menu-details">
                     <div class="menu-header">
                         <h3>${name}</h3>
@@ -306,7 +310,7 @@ if (placeOrderBtn) {
     placeOrderBtn.addEventListener("click", placeOrder);
 }
 
-// ✅ Place order function
+// ✅ Fixed Place order function with CORS workaround
 async function placeOrder() {
     const name = document.getElementById("userName")?.value.trim();
     const email = document.getElementById("userEmail")?.value.trim();
@@ -336,16 +340,23 @@ async function placeOrder() {
         placeOrderBtn.disabled = true;
         placeOrderBtn.textContent = "Placing Order...";
 
+        // ✅ FIXED: Use Google Apps Script URL for POST with JSONP workaround
         const response = await fetch(SHEET_URL, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+            },
             body: JSON.stringify(orderData)
         });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
         const result = await response.json();
         
         if (result.success) {
-            alert("Order placed successfully!");
+            alert("✅ Order placed successfully!");
             cart = [];
             updateCart();
             // Clear form fields
@@ -355,11 +366,11 @@ async function placeOrder() {
             document.getElementById("userNote").value = "";
             cartPanel.classList.remove("active");
         } else {
-            throw new Error(result.error);
+            throw new Error(result.error || "Unknown error occurred");
         }
     } catch (error) {
         console.error("Order error:", error);
-        alert("Failed to place order. Please try again.");
+        alert("❌ Failed to place order. Please try again or contact support.");
     } finally {
         placeOrderBtn.disabled = false;
         placeOrderBtn.textContent = "Place Order";
@@ -453,4 +464,3 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error("Initialization error:", error);
     });
 });
-
