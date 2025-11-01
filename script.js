@@ -1,5 +1,5 @@
 // ✅ Use your Google Apps Script URL
-const SHEET_URL = "https://script.google.com/macros/s/AKfycbwBSG7vXPOSKeFHPGbF3l5lR8Eg4f00D3GSvfXgvfz29rCkpKgDR9_E71oQQuPepZ2k/exec";
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbye8ULLSIjFT_PwZ9DhcPM5LkiAYkUgSIn5EPrSXuScyltAd1f0GmsFpFO3t_XAa4ST/exec";
 
 // DOM Elements
 const menuContainer = document.getElementById("menu");
@@ -407,3 +407,4 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error("Initialization error:", error);
     });
 });
+
