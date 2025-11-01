@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Yadava’s Menu</title>
+  <title>Yadava's Menu</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/857/857681.png" />
 </head>
 <body>
   <header>
-    <div class="logo">🍴 Yadava’s Menu</div>
+    <div class="logo">🍴 Yadava's Menu</div>
     <div class="filters">
       <input type="text" id="searchInput" placeholder="Search dishes..." />
       <select id="categoryFilter">
@@ -25,18 +25,34 @@
     <section id="menu" class="menu-grid"></section>
 
     <aside id="cart">
-      <h2>🛍️ Your Cart</h2>
+      <div class="cart-header">
+        <h2>🛍️ Your Cart</h2>
+        <button class="close-cart" onclick="document.getElementById('cart').classList.remove('active')">×</button>
+      </div>
       <ul id="cartItems"></ul>
-      <p class="total">Total: ₹<span id="cartTotal">0</span></p>
-      <input type="text" id="userName" placeholder="Your Name" />
-      <input type="email" id="userEmail" placeholder="Email (optional)" />
-      <textarea id="userNote" placeholder="Special Note (optional)"></textarea>
-      <button id="placeOrderBtn">Place Order</button>
+      <div class="cart-total">
+        <p>Total: ₹<span id="cartTotal">0</span></p>
+      </div>
+      <div class="order-form">
+        <div class="form-group">
+          <input type="text" id="userName" placeholder="Your Name *" required />
+        </div>
+        <div class="form-group">
+          <input type="email" id="userEmail" placeholder="Email *" required />
+        </div>
+        <div class="form-group">
+          <input type="text" id="userTable" placeholder="Table Number *" required />
+        </div>
+        <div class="form-group">
+          <textarea id="userNote" placeholder="Special Instructions (optional)"></textarea>
+        </div>
+        <button id="placeOrderBtn" class="order-btn">Place Order</button>
+      </div>
     </aside>
   </main>
 
   <footer>
-    <p>© 2025 Yadava’s | Powered by Sanatan Energy 🌿</p>
+    <p>© 2025 Yadava's | Powered by Sanatan Energy 🌿</p>
   </footer>
 
   <script src="script.js"></script>
