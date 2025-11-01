@@ -15,7 +15,7 @@ const placeOrderBtn = document.getElementById("placeOrderBtn");
 let menuData = [];
 let cart = [];
 
-// ✅ Simple and reliable menu loading with JSONP
+// ✅ Load menu with JSONP
 function loadMenu() {
     console.log("🔄 Loading menu from:", SHEET_URL);
     
@@ -23,7 +23,6 @@ function loadMenu() {
         const callbackName = 'menuCallback_' + Date.now();
         const script = document.createElement('script');
         
-        // Define the callback function
         window[callbackName] = function(response) {
             console.log("📦 Menu response received:", response);
             
@@ -46,7 +45,6 @@ function loadMenu() {
             }
         };
         
-        // Set up error handling
         script.onerror = function() {
             console.error("❌ Script loading failed");
             delete window[callbackName];
@@ -57,14 +55,12 @@ function loadMenu() {
             reject(new Error('Failed to load menu script'));
         };
         
-        // Create the script URL with callback and cache busting
         const url = `${SHEET_URL}?callback=${callbackName}&t=${Date.now()}`;
         console.log("🔗 Loading URL:", url);
         script.src = url;
         
         document.body.appendChild(script);
         
-        // Timeout after 15 seconds
         setTimeout(() => {
             if (window[callbackName]) {
                 console.error("⏰ Menu loading timeout");
@@ -103,14 +99,10 @@ function displayMenu(items) {
         const card = document.createElement("div");
         card.className = "menu-item";
         
-        // Safe property access with multiple fallbacks
         const name = item.Name || item.name || item.Item || `Item ${index + 1}`;
         const price = item.Price || item.price || item.Cost || 0;
         const description = item.Description || item.description || item.Desc || "Delicious item from Yadava's";
-        
-        // ✅ Use base64 SVG as placeholder
         const image = item.Image || item.image || item.Img || "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNENBRjUwIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIwLjNlbSI+WWFkYXZhJ3MgTWVudTwvdGV4dD4KPC9zdmc+";
-        
         const type = (item.Type || item.type || item.VegNonVeg || "veg").toLowerCase();
         const category = item.Category || item.category || item.Cat || "General";
         
@@ -310,7 +302,7 @@ if (placeOrderBtn) {
     placeOrderBtn.addEventListener("click", placeOrder);
 }
 
-// ✅ FIXED: Place order using JSONP (no CORS issues)
+// ✅ FIXED: Place order function
 function placeOrder() {
     const name = document.getElementById("userName")?.value.trim();
     const email = document.getElementById("userEmail")?.value.trim();
@@ -318,29 +310,29 @@ function placeOrder() {
     const note = document.getElementById("userNote")?.value.trim() || "No note";
 
     if (!name) {
-        alert("Please enter your name");
+        alert("❌ Please enter your name");
         return;
     }
 
     if (cart.length === 0) {
-        alert("Please add items to your cart");
+        alert("❌ Please add items to your cart");
         return;
     }
 
     const orderData = {
-        name,
+        name: name,
         email: email || "N/A",
-        table,
-        note,
-        cart,
+        table: table,
+        note: note,
+        cart: cart,
         totalAmount: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
     };
 
-    // ✅ Use JSONP for POST to avoid CORS
+    console.log("🛒 Placing order:", orderData);
     placeOrderWithJSONP(orderData);
 }
 
-// ✅ JSONP method for placing orders (CORS-free)
+// ✅ FIXED: JSONP method for placing orders
 function placeOrderWithJSONP(orderData) {
     return new Promise((resolve, reject) => {
         const callbackName = 'orderCallback_' + Date.now();
@@ -365,15 +357,18 @@ function placeOrderWithJSONP(orderData) {
             placeOrderBtn.textContent = "Place Order";
             
             if (response && response.success) {
-                alert("✅ Order placed successfully!");
+                console.log("✅ Order successful:", response);
+                alert("✅ " + (response.message || "Order placed successfully!"));
+                
+                // Clear cart and form
                 cart = [];
                 updateCart();
-                // Clear form fields
                 document.getElementById("userName").value = "";
                 document.getElementById("userEmail").value = "";
                 document.getElementById("userTable").value = "";
                 document.getElementById("userNote").value = "";
                 cartPanel.classList.remove("active");
+                
                 resolve(response);
             } else {
                 const errorMsg = response?.error || 'Failed to place order';
@@ -395,7 +390,7 @@ function placeOrderWithJSONP(orderData) {
             placeOrderBtn.disabled = false;
             placeOrderBtn.textContent = "Place Order";
             
-            alert("❌ Network error - cannot place order");
+            alert("❌ Network error - cannot place order. Please check your connection.");
             reject(new Error('Failed to place order'));
         };
         
