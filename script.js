@@ -1,5 +1,5 @@
-// ✅ Use the correct Google Apps Script URL from your error
-const SHEET_URL = "https://script.google.com/macros/s/AKfycbxwmKmsckx3E6oep98gm4Q2PCkGBDEnmNoiJEULAKTdglwbvfj2CJahs3NcmHqjyhAg/exec";
+// ✅ Use your Google Apps Script URL
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbz9heKlGa7lqCfULbJArGQY_EGFFIpAS-8nAGcQ_QkmVUU6HmpIR-JFajbUKUzccEmP/exec";
 
 // DOM Elements
 const menuContainer = document.getElementById("menu");
@@ -15,7 +15,7 @@ const placeOrderBtn = document.getElementById("placeOrderBtn");
 let menuData = [];
 let cart = [];
 
-// ✅ Simple and reliable menu loading
+// ✅ Simple and reliable menu loading with JSONP
 function loadMenu() {
     console.log("🔄 Loading menu from:", SHEET_URL);
     
@@ -108,7 +108,7 @@ function displayMenu(items) {
         const price = item.Price || item.price || item.Cost || 0;
         const description = item.Description || item.description || item.Desc || "Delicious item from Yadava's";
         
-        // ✅ FIXED: Use working placeholder image URL
+        // ✅ Use base64 SVG as placeholder
         const image = item.Image || item.image || item.Img || "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNENBRjUwIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIwLjNlbSI+WWFkYXZhJ3MgTWVudTwvdGV4dD4KPC9zdmc+";
         
         const type = (item.Type || item.type || item.VegNonVeg || "veg").toLowerCase();
@@ -310,8 +310,8 @@ if (placeOrderBtn) {
     placeOrderBtn.addEventListener("click", placeOrder);
 }
 
-// ✅ Fixed Place order function with CORS workaround
-async function placeOrder() {
+// ✅ FIXED: Place order using JSONP (no CORS issues)
+function placeOrder() {
     const name = document.getElementById("userName")?.value.trim();
     const email = document.getElementById("userEmail")?.value.trim();
     const table = document.getElementById("userTable")?.value.trim() || "N/A";
@@ -336,45 +336,96 @@ async function placeOrder() {
         totalAmount: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
     };
 
-    try {
+    // ✅ Use JSONP for POST to avoid CORS
+    placeOrderWithJSONP(orderData);
+}
+
+// ✅ JSONP method for placing orders (CORS-free)
+function placeOrderWithJSONP(orderData) {
+    return new Promise((resolve, reject) => {
+        const callbackName = 'orderCallback_' + Date.now();
+        const script = document.createElement('script');
+        
+        // Show loading state
         placeOrderBtn.disabled = true;
         placeOrderBtn.textContent = "Placing Order...";
 
-        // ✅ FIXED: Use Google Apps Script URL for POST with JSONP workaround
-        const response = await fetch(SHEET_URL, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify(orderData)
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const result = await response.json();
+        // Define the callback function
+        window[callbackName] = function(response) {
+            console.log("📦 Order response received:", response);
+            
+            // Clean up
+            delete window[callbackName];
+            if (script.parentNode) {
+                document.body.removeChild(script);
+            }
+            
+            // Reset button state
+            placeOrderBtn.disabled = false;
+            placeOrderBtn.textContent = "Place Order";
+            
+            if (response && response.success) {
+                alert("✅ Order placed successfully!");
+                cart = [];
+                updateCart();
+                // Clear form fields
+                document.getElementById("userName").value = "";
+                document.getElementById("userEmail").value = "";
+                document.getElementById("userTable").value = "";
+                document.getElementById("userNote").value = "";
+                cartPanel.classList.remove("active");
+                resolve(response);
+            } else {
+                const errorMsg = response?.error || 'Failed to place order';
+                console.error("❌ Order failed:", errorMsg);
+                alert("❌ " + errorMsg);
+                reject(new Error(errorMsg));
+            }
+        };
         
-        if (result.success) {
-            alert("✅ Order placed successfully!");
-            cart = [];
-            updateCart();
-            // Clear form fields
-            document.getElementById("userName").value = "";
-            document.getElementById("userEmail").value = "";
-            document.getElementById("userTable").value = "";
-            document.getElementById("userNote").value = "";
-            cartPanel.classList.remove("active");
-        } else {
-            throw new Error(result.error || "Unknown error occurred");
-        }
-    } catch (error) {
-        console.error("Order error:", error);
-        alert("❌ Failed to place order. Please try again or contact support.");
-    } finally {
-        placeOrderBtn.disabled = false;
-        placeOrderBtn.textContent = "Place Order";
-    }
+        // Set up error handling
+        script.onerror = function() {
+            console.error("❌ Order script loading failed");
+            delete window[callbackName];
+            if (script.parentNode) {
+                document.body.removeChild(script);
+            }
+            
+            // Reset button state
+            placeOrderBtn.disabled = false;
+            placeOrderBtn.textContent = "Place Order";
+            
+            alert("❌ Network error - cannot place order");
+            reject(new Error('Failed to place order'));
+        };
+        
+        // Create the script URL with order data as parameter
+        const encodedOrderData = encodeURIComponent(JSON.stringify(orderData));
+        const url = `${SHEET_URL}?action=submitOrder&orderData=${encodedOrderData}&callback=${callbackName}&t=${Date.now()}`;
+        
+        console.log("🔗 Placing order via URL:", url);
+        script.src = url;
+        
+        document.body.appendChild(script);
+        
+        // Timeout after 30 seconds
+        setTimeout(() => {
+            if (window[callbackName]) {
+                console.error("⏰ Order placement timeout");
+                delete window[callbackName];
+                if (script.parentNode) {
+                    document.body.removeChild(script);
+                }
+                
+                // Reset button state
+                placeOrderBtn.disabled = false;
+                placeOrderBtn.textContent = "Place Order";
+                
+                alert("❌ Order timeout - please try again");
+                reject(new Error('Order placement timeout'));
+            }
+        }, 30000);
+    });
 }
 
 // ✅ Initialize when page loads
