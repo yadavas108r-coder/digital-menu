@@ -122,9 +122,12 @@ main {
 
 .menu-card img {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.3s ease;
+  height: 180px;           /* same as before (don’t increase) */
+  object-fit: contain;     /* full image dikhe, crop na ho */
+  background-color: #fff;  /* clean border look */
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  padding: 6px;   
 }
 
 .menu-item:hover .menu-card img {
@@ -588,5 +591,6 @@ footer {
     opacity: 0;
   }
 }
+
 
 
