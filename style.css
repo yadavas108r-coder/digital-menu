@@ -124,8 +124,6 @@ main {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: top center; /* image top se zoom karega */
-  border-radius: 12px 12px 0 0;
   transition: transform 0.3s ease;
 }
 
@@ -590,4 +588,5 @@ footer {
     opacity: 0;
   }
 }
+
 
