@@ -109,23 +109,7 @@ function setupCategories(menuData) {
 // ✅ Get appropriate icon for category
 function getCategoryIcon(category) {
   // Default icons for common categories
-  const iconMap = {
-    'cup': '🍦',
-    'bar': '🍫',
-    'cone': '🥚',
-    'Kuff': '☕',
-    'Candy': '🍬',
-    'All': '📦',
-    'General': '📦',
-    'Ice Cream': '🍦',
-    'Shakes': '🥤',
-    'Burgers': '🍔',
-    'Dairy': '🥛',
-    'Drinks': '🥤',
-    'Desserts': '🍰',
-    'Snacks': '🍿'
-  };
-
+ 
   // Return specific icon if found, otherwise use first character
   return iconMap[category] || category.charAt(0).toUpperCase() || '📦';
 }
@@ -467,3 +451,4 @@ if (placeOrderBtn) placeOrderBtn.addEventListener("click", placeOrder);
 
 // ✅ Initialize
 document.addEventListener("DOMContentLoaded", loadMenu);
+
