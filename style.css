@@ -257,6 +257,29 @@ main {
   align-items: center;
   justify-content: center;
 }
+.quantity-control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.quantity-control button {
+  background: #4CAF50;
+  color: white;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.quantity-control .qty {
+  font-weight: 600;
+  min-width: 20px;
+  text-align: center;
+}
 
 .close-cart:hover {
   color: #e53e3e;
@@ -591,3 +614,4 @@ footer {
     opacity: 0;
   }
 }
+
