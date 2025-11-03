@@ -59,7 +59,7 @@ function loadMenu() {
   });
 }
 
-// ✅ Display menu with quantity toggle
+// ✅ Display menu with live cart sync
 function displayMenu(items) {
   if (!menuContainer) return;
 
@@ -128,7 +128,7 @@ function displayMenu(items) {
   });
 }
 
-// ✅ Toggle Add-to-Cart to Quantity
+// ✅ Add button → Quantity control
 function toggleAdd(name, price, index) {
   addToCart(name, price);
   const btnDiv = document.getElementById(`btn-${index}`);
@@ -142,7 +142,7 @@ function toggleAdd(name, price, index) {
   }
 }
 
-// ✅ Update quantity from product card
+// ✅ Update quantity from both product and cart panel
 function updateItemQty(name, change) {
   const item = cart.find((c) => c.name === name);
   if (!item) return;
@@ -155,13 +155,7 @@ function updateItemQty(name, change) {
   displayMenu(menuData);
 }
 
-// ✅ Handle broken images
-function handleImageError(img) {
-  img.src =
-    "https://via.placeholder.com/200x150?text=Yadava's+Menu";
-}
-
-// ✅ Add to cart
+// ✅ Add to cart (if not exists)
 function addToCart(name, price, image = "") {
   const existingItem = cart.find((item) => item.name === name);
   if (existingItem) existingItem.quantity += 1;
@@ -170,14 +164,19 @@ function addToCart(name, price, image = "") {
   updateCart();
 }
 
-// ✅ Update cart side panel
+// ✅ Handle broken images
+function handleImageError(img) {
+  img.src = "https://via.placeholder.com/200x150?text=Yadava's+Menu";
+}
+
+// ✅ Update cart side panel with quantity + remove
 function updateCart() {
   if (!cartItems) return;
   cartItems.innerHTML = "";
   let total = 0,
     count = 0;
 
-  cart.forEach((item, index) => {
+  cart.forEach((item) => {
     total += item.price * item.quantity;
     count += item.quantity;
 
@@ -187,11 +186,11 @@ function updateCart() {
       <div class="cart-item-content">
         <span class="cart-item-name">${item.name}</span>
         <div class="cart-item-controls">
-          <button onclick="updateCartQuantity(${index}, -1)">−</button>
+          <button onclick="updateItemQty('${item.name}', -1)">−</button>
           <span class="quantity">${item.quantity}</span>
-          <button onclick="updateCartQuantity(${index}, 1)">+</button>
+          <button onclick="updateItemQty('${item.name}', 1)">+</button>
           <span class="price">₹${item.price * item.quantity}</span>
-          <button class="remove-btn" onclick="removeFromCart(${index})">×</button>
+          <button class="remove-btn" onclick="removeFromCart('${item.name}')">×</button>
         </div>
       </div>`;
     cartItems.appendChild(li);
@@ -199,8 +198,16 @@ function updateCart() {
 
   cartTotal.textContent = total.toFixed(2);
   cartCount.textContent = count;
+
   if (cart.length === 0)
     cartItems.innerHTML = `<li class="empty-cart">Your cart is empty</li>`;
+}
+
+// ✅ Remove item fully from cart
+function removeFromCart(name) {
+  cart = cart.filter((item) => item.name !== name);
+  updateCart();
+  displayMenu(menuData);
 }
 
 // ✅ Category & Search
@@ -229,10 +236,7 @@ function filterMenu() {
 // ✅ Event Listeners
 if (categoryFilter) categoryFilter.addEventListener("change", filterMenu);
 if (searchInput) searchInput.addEventListener("input", filterMenu);
-if (cartBtn)
-  cartBtn.addEventListener("click", () =>
-    cartPanel.classList.toggle("active")
-  );
+if (cartBtn) cartBtn.addEventListener("click", () => cartPanel.classList.toggle("active"));
 
 // ✅ Initialize
 document.addEventListener("DOMContentLoaded", loadMenu);
