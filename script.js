@@ -1,5 +1,5 @@
 // ✅ Use your Google Apps Script URL
-const SHEET_URL = "https://script.google.com/macros/s/AKfycbxdR2CL_rgUa3JX3nuvgUurk9GX0NrtpP7rMDjSY6jqAvHax-MY6x04SDgfNEJ1EDF4/exec";
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbx6ndgo4onD7NqTCofDwlC0yDJP04bkpdjl3VqOQMCIr3hFwQTCn9LqR7j1DjFZty8/exec";
 
 // DOM Elements
 const menuContainer = document.getElementById("menu");
@@ -467,6 +467,7 @@ if (placeOrderBtn) placeOrderBtn.addEventListener("click", placeOrder);
 
 // ✅ Initialize
 document.addEventListener("DOMContentLoaded", loadMenu);
+
 
 
 
