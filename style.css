@@ -35,11 +35,6 @@ header {
   gap: 0.5rem;
 }
 
-.logo::before {
-  content: "🍦";
-  font-size: 2rem;
-}
-
 .filters {
   display: flex;
   gap: 1.5rem;
