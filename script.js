@@ -11,9 +11,11 @@ const cartItems = document.getElementById("cartItems");
 const cartTotal = document.getElementById("cartTotal");
 const cartCount = document.getElementById("cartCount");
 const placeOrderBtn = document.getElementById("placeOrderBtn");
+const categoryGrid = document.getElementById("categoryGrid");
 
 let menuData = [];
 let cart = [];
+let categories = [];
 
 // ✅ Load menu from Google Sheet
 function loadMenu() {
@@ -30,6 +32,7 @@ function loadMenu() {
       if (response && response.status === "success" && response.menu) {
         menuData = response.menu;
         displayMenu(menuData);
+        setupCategories(menuData); // ✅ Categories dynamically setup
         populateCategories(menuData);
         resolve(response);
       } else {
@@ -59,6 +62,103 @@ function loadMenu() {
   });
 }
 
+// ✅ Setup Categories Dynamically from Google Sheets Data
+function setupCategories(menuData) {
+  if (!categoryGrid) return;
+
+  // Extract unique categories from menu data
+  categories = [...new Set(menuData.map(item => item.Category || item.category || "General"))];
+  
+  // Add "All" category at the beginning
+  categories.unshift("All");
+
+  // Clear existing categories
+  categoryGrid.innerHTML = '';
+
+  // Create category items dynamically
+  categories.forEach(category => {
+    const categoryItem = document.createElement("div");
+    categoryItem.className = "category-item";
+    categoryItem.setAttribute("data-category", category);
+    
+    categoryItem.innerHTML = `
+      <div class="category-icon">${getCategoryIcon(category)}</div>
+      <span class="category-name">${category}</span>
+    `;
+
+    // Add click event for filtering
+    categoryItem.addEventListener("click", function() {
+      filterByCategory(category);
+      
+      // Update active state
+      document.querySelectorAll('.category-item').forEach(item => {
+        item.classList.remove('active');
+      });
+      this.classList.add('active');
+    });
+
+    categoryGrid.appendChild(categoryItem);
+  });
+
+  // Set "All" as active by default
+  if (categoryGrid.firstChild) {
+    categoryGrid.firstChild.classList.add('active');
+  }
+}
+
+// ✅ Get appropriate icon for category
+function getCategoryIcon(category) {
+  // Default icons for common categories
+  const iconMap = {
+    'cup': '🍦',
+    'bar': '🍫',
+    'cone': '🥚',
+    'Kuff': '☕',
+    'Candy': '🍬',
+    'All': '📦',
+    'General': '📦',
+    'Ice Cream': '🍦',
+    'Shakes': '🥤',
+    'Burgers': '🍔',
+    'Dairy': '🥛',
+    'Drinks': '🥤',
+    'Desserts': '🍰',
+    'Snacks': '🍿'
+  };
+
+  // Return specific icon if found, otherwise use first character
+  return iconMap[category] || category.charAt(0).toUpperCase() || '📦';
+}
+
+// ✅ Filter by category (for category grid)
+function filterByCategory(category) {
+  const searchTerm = searchInput.value.toLowerCase();
+  
+  let filtered = menuData;
+  
+  if (category !== "All") {
+    filtered = menuData.filter(item => {
+      const itemCategory = item.Category || item.category || "General";
+      return itemCategory === category;
+    });
+  }
+  
+  // Apply search filter if any
+  if (searchTerm) {
+    filtered = filtered.filter(item => {
+      const name = item.Name || item.name || "";
+      return name.toLowerCase().includes(searchTerm);
+    });
+  }
+  
+  displayMenu(filtered);
+  
+  // Update dropdown to match
+  if (categoryFilter) {
+    categoryFilter.value = category;
+  }
+}
+
 // ✅ Display menu with live cart sync
 function displayMenu(items) {
   if (!menuContainer) return;
@@ -83,7 +183,7 @@ function displayMenu(items) {
       item.image ||
       item.Img ||
       "https://via.placeholder.com/200x150?text=No+Image";
-    const category = item.Category || "General";
+    const category = item.Category || item.category || "General";
     const type = (item.Type || "veg").toLowerCase();
     const vegIcon = type.includes("veg") ? "🟢" : "🔴";
 
@@ -153,7 +253,31 @@ function updateItemQty(name, change) {
     cart = cart.filter(c => c.name !== name);
   }
   updateCart();
-  displayMenu(menuData);
+  displayMenu(getFilteredMenu());
+}
+
+// ✅ Get currently filtered menu based on active category and search
+function getFilteredMenu() {
+  const activeCategory = document.querySelector('.category-item.active')?.getAttribute('data-category') || 'All';
+  const searchTerm = searchInput.value.toLowerCase();
+  
+  let filtered = menuData;
+  
+  if (activeCategory !== "All") {
+    filtered = menuData.filter(item => {
+      const itemCategory = item.Category || item.category || "General";
+      return itemCategory === activeCategory;
+    });
+  }
+  
+  if (searchTerm) {
+    filtered = filtered.filter(item => {
+      const name = item.Name || item.name || "";
+      return name.toLowerCase().includes(searchTerm);
+    });
+  }
+  
+  return filtered;
 }
 
 // ✅ Add to cart if new
@@ -199,7 +323,7 @@ function updateCart() {
     cartItems.appendChild(li);
   });
 
-  cartTotal.textContent = `₹${total.toFixed(2)}`;
+  cartTotal.textContent = total.toFixed(2);
   cartCount.textContent = count;
 
   if (cart.length === 0) {
@@ -211,10 +335,10 @@ function updateCart() {
 function removeFromCart(name) {
   cart = cart.filter(item => item.name !== name);
   updateCart();
-  displayMenu(menuData);
+  displayMenu(getFilteredMenu());
 }
 
-// ✅ Category & Search
+// ✅ Category & Search (for dropdown)
 function populateCategories(data) {
   if (!categoryFilter) return;
   categoryFilter.innerHTML = `<option value="All">All Categories</option>`;
@@ -230,6 +354,15 @@ function populateCategories(data) {
 function filterMenu() {
   const category = categoryFilter.value;
   const searchTerm = searchInput.value.toLowerCase();
+  
+  // Update category grid active state
+  document.querySelectorAll('.category-item').forEach(item => {
+    item.classList.remove('active');
+    if (item.getAttribute('data-category') === category) {
+      item.classList.add('active');
+    }
+  });
+  
   const filtered = menuData.filter(item => {
     const cat = item.Category || item.category || "General";
     const nm = item.Name || item.name || "";
@@ -284,7 +417,7 @@ function placeOrder() {
       // clear cart and form
       cart = [];
       updateCart();
-      displayMenu(menuData);
+      displayMenu(getFilteredMenu());
       document.getElementById("userName").value = "";
       document.getElementById("userEmail").value = "";
       document.getElementById("userTable").value = "";
@@ -307,6 +440,23 @@ function placeOrder() {
   const encoded = encodeURIComponent(JSON.stringify(orderData));
   script.src = `${SHEET_URL}?action=submitOrder&orderData=${encoded}&callback=${callbackName}&t=${Date.now()}`;
   document.body.appendChild(script);
+}
+
+// ✅ Close cart function
+function closeCart() {
+  cartPanel.classList.remove("active");
+}
+
+// ✅ Show menu error
+function showMenuError(message) {
+  if (menuContainer) {
+    menuContainer.innerHTML = `
+      <div class="error-message">
+        <h3>⚠️ Error Loading Menu</h3>
+        <p>${message}</p>
+        <button onclick="loadMenu()" class="retry-btn">Retry</button>
+      </div>`;
+  }
 }
 
 // ✅ Event Listeners
