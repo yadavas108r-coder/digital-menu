@@ -19,7 +19,7 @@ async function loadDashboard() {
   let totalSales = orders.reduce((sum, o) => sum + Number(o.Total || 0), 0);
   document.getElementById("totalOrders").innerText = orders.length;
   document.getElementById("totalSales").innerText = "₹" + totalSales;
-  document.getElementById("totalProducts").innerText = menu.length;
+ document.getElementById("totalProducts").innerText = data.count;
 }
 
 // ✅ Load Menu
