@@ -43,7 +43,7 @@
   </table>
 
   <script>
-    const scriptURL = "YOUR_WEB_APP_URL"; // 🔗 Replace with your Apps Script deployment URL
+    const scriptURL = "https://script.google.com/macros/s/AKfycbyii5UZmz-aVDjb-FXYCPIW_7d4-GBReGRH2dOeX2lYYl4Si2wmbQU3RrGOqVvqEoiV/exec"; // 🔗 Replace with your Apps Script deployment URL
 
     async function loadDashboard() {
       const stats = await fetch(scriptURL + "?action=getDashboardStats").then(r => r.json());
