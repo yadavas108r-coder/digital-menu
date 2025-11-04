@@ -1,48 +1,150 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Yadava’s Admin Dashboard</title>
+  <link rel="stylesheet" href="style.css">
   <style>
-    body { font-family: Poppins, sans-serif; margin: 0; background: #f6f8fa; }
-    header { background: #111; color: white; padding: 15px 30px; font-size: 22px; }
-    .cards { display: flex; gap: 20px; flex-wrap: wrap; margin: 30px; }
-    .card {
-      background: white; flex: 1; min-width: 250px;
-      padding: 25px; border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      text-align: center;
+    body {
+      margin: 0;
+      font-family: "Poppins", sans-serif;
+      background-color: #f5f8fb;
+      color: #111;
     }
-    .card h2 { margin: 10px 0 5px; font-size: 28px; }
-    .card p { margin: 0; color: #555; }
-    table { width: 95%; margin: 30px auto; border-collapse: collapse; }
-    th, td { padding: 10px; border-bottom: 1px solid #ddd; text-align: center; }
-    th { background: #111; color: white; }
-    canvas { display: block; margin: 30px auto; width: 80%; max-width: 600px; }
+
+    header {
+      background: #000;
+      color: white;
+      padding: 15px 25px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .dashboard-container {
+      padding: 25px;
+    }
+
+    .analytics {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 30px;
+    }
+
+    .card {
+      background: white;
+      flex: 1;
+      min-width: 280px;
+      text-align: center;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+    }
+
+    .card h2 {
+      margin: 0;
+      font-size: 20px;
+      color: #000;
+    }
+
+    .card p {
+      margin-top: 8px;
+      color: gray;
+      font-size: 14px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    thead {
+      background: #000;
+      color: white;
+    }
+
+    th, td {
+      padding: 10px;
+      text-align: left;
+      font-size: 14px;
+      border-bottom: 1px solid #eee;
+    }
+
+    tr:hover {
+      background: #f0f0f0;
+    }
+
+    footer {
+      text-align: center;
+      padding: 15px;
+      background: #000;
+      color: white;
+      margin-top: 20px;
+      font-size: 13px;
+    }
+
+    @media (max-width: 768px) {
+      .analytics {
+        flex-direction: column;
+      }
+    }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <header>📊 Yadava’s Admin Dashboard</header>
-  <section class="cards">
-    <div class="card"><h2 id="totalOrders">0</h2><p>Total Orders</p></div>
-    <div class="card"><h2 id="totalSales">₹0</h2><p>Total Sales</p></div>
-    <div class="card"><h2 id="todayOrders">0</h2><p>Today’s Orders</p></div>
-  </section>
+  <header>
+    <h1>📊 Yadava’s Admin Dashboard</h1>
+  </header>
 
-  <canvas id="topItemsChart"></canvas>
+  <div class="dashboard-container">
+    <div class="analytics">
+      <div class="card">
+        <h2 id="totalOrders">0</h2>
+        <p>Total Orders</p>
+      </div>
+      <div class="card">
+        <h2 id="totalSales">₹0</h2>
+        <p>Total Sales</p>
+      </div>
+      <div class="card">
+        <h2 id="todayOrders">0</h2>
+        <p>Today's Orders</p>
+      </div>
+    </div>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Time</th><th>Name</th><th>Table</th><th>Items</th><th>Total</th><th>Review</th><th>Email</th>
-      </tr>
-    </thead>
-    <tbody id="ordersTable"></tbody>
-  </table>
-  
-<script src="admin.js"></script>
+    <h3>📦 Orders List</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Name</th>
+          <th>Table</th>
+          <th>Items</th>
+          <th>Total</th>
+          <th>Review</th>
+          <th>Email</th>
+        </tr>
+      </thead>
+      <tbody id="ordersTableBody">
+        <tr><td colspan="7" style="text-align:center;">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
 
+  <footer>
+    © 2025 Yadava’s | Powered by Sanatan Energy 🌿
+  </footer>
+
+  <script src="admin.js"></script>
 </body>
 </html>
