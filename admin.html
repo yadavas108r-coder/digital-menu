@@ -1,18 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Yadava’s Admin Dashboard</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Yadava’s Admin Panel</title>
   <style>
+    * {
+      box-sizing: border-box;
+      font-family: "Poppins", sans-serif;
+    }
     body {
       margin: 0;
-      font-family: "Poppins", sans-serif;
-      background-color: #f5f8fb;
+      background-color: #f7f8fa;
       color: #111;
     }
-
     header {
       background: #000;
       color: white;
@@ -21,52 +22,88 @@
       justify-content: space-between;
       align-items: center;
     }
-
     header h1 {
       margin: 0;
-      font-size: 18px;
+      font-size: 20px;
     }
 
-    .dashboard-container {
-      padding: 25px;
+    main {
+      padding: 20px;
     }
 
     .analytics {
-      display: flex;
-      gap: 20px;
-      flex-wrap: wrap;
-      margin-bottom: 30px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 15px;
+      margin-bottom: 25px;
     }
 
     .card {
-      background: white;
-      flex: 1;
-      min-width: 280px;
-      text-align: center;
+      background: #fff;
       border-radius: 10px;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
       padding: 20px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      transition: 0.3s;
+    }
+
+    .card:hover {
+      transform: translateY(-3px);
     }
 
     .card h2 {
       margin: 0;
-      font-size: 20px;
-      color: #000;
+      font-size: 28px;
+      color: #111;
     }
 
     .card p {
-      margin-top: 8px;
+      margin: 8px 0 0;
       color: gray;
       font-size: 14px;
+    }
+
+    .section {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      padding: 20px;
+      margin-bottom: 25px;
+    }
+
+    .section h3 {
+      margin-top: 0;
+      font-size: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .refresh-btn {
+      background: #000;
+      color: white;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .refresh-btn:hover {
+      background: #333;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      background: white;
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      margin-top: 10px;
+    }
+
+    th, td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
     }
 
     thead {
@@ -74,39 +111,55 @@
       color: white;
     }
 
-    th, td {
-      padding: 10px;
-      text-align: left;
-      font-size: 14px;
-      border-bottom: 1px solid #eee;
+    tbody tr:hover {
+      background: #f2f2f2;
     }
 
-    tr:hover {
-      background: #f0f0f0;
+    /* Menu Editor */
+    .menu-form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .menu-form input {
+      flex: 1;
+      min-width: 140px;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    .menu-form button {
+      background: #000;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .menu-form button:hover {
+      background: #333;
     }
 
     footer {
-      text-align: center;
-      padding: 15px;
       background: #000;
       color: white;
-      margin-top: 20px;
+      text-align: center;
+      padding: 10px;
       font-size: 13px;
-    }
-
-    @media (max-width: 768px) {
-      .analytics {
-        flex-direction: column;
-      }
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>📊 Yadava’s Admin Dashboard</h1>
+    <h1>Yadava’s Admin Dashboard</h1>
   </header>
 
-  <div class="dashboard-container">
+  <main>
+    <!-- ANALYTICS -->
     <div class="analytics">
       <div class="card">
         <h2 id="totalOrders">0</h2>
@@ -122,28 +175,54 @@
       </div>
     </div>
 
-    <h3>📦 Orders List</h3>
-    <table>
-      <thead>
-        <tr>
-          <th>Time</th>
-          <th>Name</th>
-          <th>Table</th>
-          <th>Items</th>
-          <th>Total</th>
-          <th>Review</th>
-          <th>Email</th>
-        </tr>
-      </thead>
-      <tbody id="ordersTableBody">
-        <tr><td colspan="7" style="text-align:center;">Loading...</td></tr>
-      </tbody>
-    </table>
-  </div>
+    <!-- ORDERS -->
+    <div class="section">
+      <h3>📦 Orders List <button class="refresh-btn" onclick="loadDashboard()">Refresh</button></h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Name</th>
+            <th>Table</th>
+            <th>Items</th>
+            <th>Total</th>
+            <th>Review</th>
+            <th>Email</th>
+          </tr>
+        </thead>
+        <tbody id="ordersTableBody">
+          <tr><td colspan="7" style="text-align:center;">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
 
-  <footer>
-    © 2025 Yadava’s | Powered by Sanatan Energy 🌿
-  </footer>
+    <!-- MENU EDITOR -->
+    <div class="section">
+      <h3>📝 Menu Editor</h3>
+      <form class="menu-form" onsubmit="return addMenuItem(event)">
+        <input type="text" id="itemName" placeholder="Item Name" required />
+        <input type="number" id="itemPrice" placeholder="Price ₹" required />
+        <input type="text" id="itemCategory" placeholder="Category" required />
+        <button type="submit">Add Item</button>
+      </form>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Price</th>
+            <th>Category</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="menuTableBody">
+          <tr><td colspan="4" style="text-align:center;">Loading menu...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <footer>© 2025 Yadava’s | Powered by Sanatan Energy 🌿</footer>
 
   <script src="admin.js"></script>
 </body>
