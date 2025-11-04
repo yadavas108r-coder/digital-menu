@@ -41,50 +41,8 @@
     </thead>
     <tbody id="ordersTable"></tbody>
   </table>
+  
+<script src="admin.js"></script>
 
-  <script>
-    const scriptURL = "https://script.google.com/macros/s/AKfycbyii5UZmz-aVDjb-FXYCPIW_7d4-GBReGRH2dOeX2lYYl4Si2wmbQU3RrGOqVvqEoiV/exec"; // 🔗 Replace with your Apps Script deployment URL
-
-    async function loadDashboard() {
-      const stats = await fetch(scriptURL + "?action=getDashboardStats").then(r => r.json());
-      document.getElementById("totalOrders").innerText = stats.totalOrders;
-      document.getElementById("totalSales").innerText = "₹" + stats.totalSales;
-      document.getElementById("todayOrders").innerText = stats.todayOrders;
-    }
-
-    async function loadTopProducts() {
-      const data = await fetch(scriptURL + "?action=getTopProducts").then(r => r.json());
-      const ctx = document.getElementById('topItemsChart');
-      new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: data.map(d => d.item),
-          datasets: [{ label: 'Orders', data: data.map(d => d.count) }]
-        }
-      });
-    }
-
-    async function loadOrders() {
-      const data = await fetch(scriptURL + "?action=getOrders").then(r => r.json());
-      const tbody = document.getElementById("ordersTable");
-      tbody.innerHTML = "";
-      data.slice(-10).reverse().forEach(o => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${new Date(o.timestamp).toLocaleString()}</td>
-          <td>${o.name}</td><td>${o.table}</td><td>${o.items}</td>
-          <td>₹${o.total}</td><td>${o.review || "-"}</td><td>${o.email || "-"}</td>`;
-        tbody.appendChild(tr);
-      });
-    }
-
-    async function init() {
-      await loadDashboard();
-      await loadTopProducts();
-      await loadOrders();
-    }
-
-    init();
-    setInterval(init, 30000);
-  </script>
 </body>
 </html>
