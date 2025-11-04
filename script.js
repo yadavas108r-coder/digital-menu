@@ -11,7 +11,7 @@
 // =======================
 
 // ---------- CONFIG ----------
-const SHEET_URL = "https://script.google.com/macros/s/AKfycbx6ndgo4onD7NqTCofDwlC0yDJP04bkpdjl3VqOQMCIr3hFwQTCn9LqR7j1DjFZty8/exec";
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbyii5UZmz-aVDjb-FXYCPIW_7d4-GBReGRH2dOeX2lYYl4Si2wmbQU3RrGOqVvqEoiV/exec";
 const MENU_CACHE_KEY = "gd_menu_cache_v1";
 const CART_CACHE_KEY = "gd_cart_cache_v1";
 const MENU_CACHE_TS = "gd_menu_cache_ts";
@@ -448,3 +448,4 @@ document.addEventListener("DOMContentLoaded", () => {
   } catch(e){ /* ignore */ }
   loadMenu().catch(err => console.error("Menu load failed", err));
 });
+
