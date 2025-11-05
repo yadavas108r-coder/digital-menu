@@ -370,7 +370,7 @@ function updateCart() {
 // ---------- Place order (JSONP submit) ----------
 function placeOrder() {
   const name = document.getElementById("userName")?.value.trim();
-  const phone = document.getElementById("phone")?.value.trim();
+  const phone = document.getElementById("userPhone")?.value.trim();
   const email = document.getElementById("userEmail")?.value.trim();
   const table = document.getElementById("userTable")?.value.trim() || "N/A";
   const note = document.getElementById("userNote")?.value.trim() || "No note";
@@ -379,9 +379,17 @@ function placeOrder() {
   if (cart.length === 0) { alert("❌ Please add items to your cart"); return; }
 
   const orderData = {
-    name, email: email || "N/A", table, review: note,
-    cart: cart.map(i => ({name:i.name, price:i.price, quantity:i.quantity})),
-    totalAmount: cart.reduce((s,i) => s + i.price*i.quantity, 0)
+    name: name,
+    email: email,
+    phone: phone, // ✅ This was missing
+    table: table,
+    review: note,
+    cart: cart.map(item => ({ 
+      name: item.name, 
+      price: item.price, 
+      quantity: item.quantity 
+    })),
+    totalAmount: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
   };
 
   placeOrderBtn.disabled = true;
@@ -398,7 +406,7 @@ function placeOrder() {
       showToast("Order placed ✅");
       cart = []; saveCartToCache(); updateCart();
       displayMenu(getFilteredMenu());
-      const fEls = ["userName","userEmail","userTable","userNote"];
+      const fEls = ["userName","userPhone","userEmail","userTable","userNote"];
       fEls.forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
       if (cartPanel) cartPanel.classList.remove("active");
     } else {
@@ -449,6 +457,7 @@ document.addEventListener("DOMContentLoaded", () => {
   } catch(e){ /* ignore */ }
   loadMenu().catch(err => console.error("Menu load failed", err));
 });
+
 
 
 
