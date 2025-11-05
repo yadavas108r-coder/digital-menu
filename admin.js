@@ -24,51 +24,73 @@ async function loadDashboard() {
       throw new Error('Some API requests failed');
     }
     
-    const stats = await statsResponse.json().catch(handleJsonError);
-    const salesData = await salesResponse.json().catch(handleJsonError);
-    const topProducts = await productsResponse.json().catch(handleJsonError);
+    const statsData = await statsResponse.json().catch(handleJsonError);
+    const salesResponseData = await salesResponse.json().catch(handleJsonError);
+    const productsResponseData = await productsResponse.json().catch(handleJsonError);
     const ordersData = await ordersResponse.json().catch(handleJsonError);
     const menuData = await menuResponse.json().catch(handleJsonError);
     
-    console.log("📊 API Responses:", { stats, salesData, topProducts, ordersData, menuData });
+    console.log("📊 Raw API Responses:", { 
+      statsData, 
+      salesResponseData, 
+      productsResponseData, 
+      ordersData, 
+      menuData 
+    });
     
-    // Update dashboard with proper error handling
-    if (stats && stats.status === 'success') {
-      updateAnalytics(stats);
-    } else {
-      console.error('Stats data error:', stats);
+    // ✅ FIX: Properly extract data from nested objects
+    const stats = (statsData && statsData.status === 'success') ? statsData : {};
+    
+    // Fix for salesData - it's coming as object with numeric keys
+    let salesData = [];
+    if (salesResponseData && salesResponseData.status === 'success') {
+      if (Array.isArray(salesResponseData)) {
+        salesData = salesResponseData;
+      } else if (salesResponseData.salesData) {
+        salesData = salesResponseData.salesData;
+      } else {
+        // Convert object with numeric keys to array
+        salesData = Object.keys(salesResponseData)
+          .filter(key => !isNaN(key))
+          .map(key => salesResponseData[key])
+          .filter(item => item && typeof item === 'object');
+      }
     }
     
-    if (salesData && salesData.status === 'success' && Array.isArray(salesData)) {
-      updateSalesChart(salesData);
-    } else {
-      console.error('Sales data error or not array:', salesData);
-      updateSalesChart([]); // Pass empty array
+    // Fix for topProducts
+    let topProducts = [];
+    if (productsResponseData && productsResponseData.status === 'success') {
+      if (Array.isArray(productsResponseData)) {
+        topProducts = productsResponseData;
+      } else if (productsResponseData.topProducts) {
+        topProducts = productsResponseData.topProducts;
+      } else {
+        // Convert object with numeric keys to array
+        topProducts = Object.keys(productsResponseData)
+          .filter(key => !isNaN(key))
+          .map(key => productsResponseData[key])
+          .filter(item => item && typeof item === 'object');
+      }
     }
     
-    if (topProducts && topProducts.status === 'success' && Array.isArray(topProducts)) {
-      updateProductsChart(topProducts);
-    } else {
-      console.error('Products data error or not array:', topProducts);
-      updateProductsChart([]); // Pass empty array
-    }
+    const orders = (ordersData && ordersData.status === 'success') ? (ordersData.orders || []) : [];
+    const menu = (menuData && menuData.status === 'success') ? (menuData.menu || []) : [];
     
-    if (ordersData && ordersData.status === 'success') {
-      updateOrdersTable(ordersData.orders);
-    } else {
-      showError('ordersLoading', 'Failed to load orders');
-    }
+    console.log("📈 Extracted Data:", {
+      stats, salesData, topProducts, orders, menu
+    });
     
-    if (menuData && menuData.status === 'success') {
-      updateMenuTable(menuData.menu);
-    } else {
-      showError('menuLoading', 'Failed to load menu');
-    }
+    // Update dashboard with extracted data
+    updateAnalytics(stats);
+    updateSalesChart(Array.isArray(salesData) ? salesData : []);
+    updateProductsChart(Array.isArray(topProducts) ? topProducts : []);
+    updateOrdersTable(Array.isArray(orders) ? orders : []);
+    updateMenuTable(Array.isArray(menu) ? menu : []);
     
   } catch (err) {
     console.error("❌ Load Error:", err);
-    showError('ordersLoading', 'Network error loading data: ' + err.message);
-    showError('menuLoading', 'Network error loading data: ' + err.message);
+    showError('ordersLoading', 'Network error loading data');
+    showError('menuLoading', 'Network error loading data');
     
     // Initialize charts with empty data
     updateSalesChart([]);
@@ -76,199 +98,7 @@ async function loadDashboard() {
   }
 }
 
-// ✅ Update Analytics Cards
-function updateAnalytics(stats) {
-  if (!stats) return;
-  
-  document.getElementById("totalOrders").textContent = stats.totalOrders || 0;
-  document.getElementById("totalSales").textContent = `₹${stats.totalSales || 0}`;
-  document.getElementById("todayOrders").textContent = stats.todayOrders || 0;
-  document.getElementById("pendingOrders").textContent = stats.pendingOrders || 0;
-}
-
-// ✅ Update Sales Chart with proper error handling
-function updateSalesChart(salesData) {
-  const ctx = document.getElementById('salesChart');
-  if (!ctx) return;
-  
-  // Ensure salesData is an array
-  if (!Array.isArray(salesData)) {
-    console.error('Sales data is not an array:', salesData);
-    salesData = [];
-  }
-  
-  if (salesChart) {
-    salesChart.destroy();
-  }
-  
-  const labels = salesData.map(item => {
-    try {
-      const date = new Date(item.date);
-      return date.toLocaleDateString('en-US', { weekday: 'short' });
-    } catch (e) {
-      return 'Invalid Date';
-    }
-  });
-  
-  const data = salesData.map(item => item.sales || 0);
-  
-  // If no data, show placeholder
-  if (salesData.length === 0) {
-    labels.push('No Data');
-    data.push(0);
-  }
-  
-  salesChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: 'Daily Sales (₹)',
-        data: data,
-        borderColor: '#ff6b6b',
-        backgroundColor: 'rgba(255, 107, 107, 0.1)',
-        borderWidth: 3,
-        fill: true,
-        tension: 0.4
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: {
-          display: true
-        }
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          ticks: {
-            callback: function(value) {
-              return '₹' + value;
-            }
-          }
-        }
-      }
-    }
-  });
-}
-
-// ✅ Update Products Chart with proper error handling
-function updateProductsChart(productsData) {
-  const ctx = document.getElementById('productsChart');
-  if (!ctx) return;
-  
-  // Ensure productsData is an array
-  if (!Array.isArray(productsData)) {
-    console.error('Products data is not an array:', productsData);
-    productsData = [];
-  }
-  
-  if (productsChart) {
-    productsChart.destroy();
-  }
-  
-  const labels = productsData.map(item => {
-    const name = item.name || 'Unknown';
-    return name.length > 15 ? name.substring(0, 15) + '...' : name;
-  });
-  
-  const data = productsData.map(item => item.count || 0);
-  
-  // If no data, show placeholder
-  if (productsData.length === 0) {
-    labels.push('No Products');
-    data.push(0);
-  }
-  
-  productsChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: 'Quantity Sold',
-        data: data,
-        backgroundColor: [
-          '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57',
-          '#ff9ff3', '#54a0ff', '#5f27cd', '#00d2d3', '#ff9f43'
-        ],
-        borderWidth: 0
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: {
-          display: false
-        }
-      },
-      scales: {
-        y: {
-          beginAtZero: true
-        }
-      }
-    }
-  });
-}
-
-// ✅ Update Orders Table
-function updateOrdersTable(orders) {
-  const tbody = document.getElementById("ordersTableBody");
-  const table = document.getElementById("ordersTable");
-  
-  if (!orders || !Array.isArray(orders) || orders.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#666;">No orders found</td></tr>';
-    if (table) table.style.display = 'table';
-    hideLoading('ordersLoading');
-    return;
-  }
-  
-  tbody.innerHTML = '';
-  
-  orders.forEach(order => {
-    const tr = document.createElement("tr");
-    
-    // Format items for display
-    let itemsText = 'N/A';
-    try {
-      const items = order.Items ? JSON.parse(order.Items) : [];
-      itemsText = items.map(item => 
-        `${item.name} (${item.quantity}x)`
-      ).join(', ');
-    } catch (e) {
-      itemsText = order.Items || 'N/A';
-    }
-    
-    // Format timestamp
-    const timestamp = order.Timestamp ? 
-      new Date(order.Timestamp).toLocaleString() : 'N/A';
-    
-    const status = order.Status || 'pending';
-    
-    tr.innerHTML = `
-      <td>${timestamp}</td>
-      <td><strong>${order.Name || 'N/A'}</strong></td>
-      <td>${order.Phone || 'N/A'}</td>
-      <td>${order.Table || 'N/A'}</td>
-      <td title="${itemsText}">${itemsText.substring(0, 30)}${itemsText.length > 30 ? '...' : ''}</td>
-      <td><strong>₹${parseFloat(order.Total || 0).toFixed(2)}</strong></td>
-      <td>
-        <span class="status-badge status-${status}">${status}</span>
-      </td>
-      <td>
-        <button class="complete-btn" onclick="completeOrder('${order.Timestamp}')">
-          ✅ Complete
-        </button>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
-  
-  if (table) table.style.display = 'table';
-  hideLoading('ordersLoading');
-}
-
-// ✅ Update Menu Table
+// ✅ Update Menu Table with proper data mapping
 function updateMenuTable(menu) {
   const tbody = document.getElementById("menuTableBody");
   const table = document.getElementById("menuTable");
@@ -284,18 +114,32 @@ function updateMenuTable(menu) {
   
   menu.forEach(item => {
     const tr = document.createElement("tr");
-    const imageUrl = item.Image || item.image || 'https://via.placeholder.com/50x50?text=No+Image';
+    
+    // ✅ FIX: Use proper field mapping for your sheet structure
+    const name = item.Name || item.name || 'Unknown';
+    const price = item.Price || item.price || 0;
+    const category = item.Category || item.category || 'General';
+    const type = item.Type || item.type || 'veg';
+    
+    // ✅ FIX: Get image from correct field and provide fallback
+    let imageUrl = item.Image || item.image;
+    if (!imageUrl || imageUrl === '' || imageUrl.includes('undefined')) {
+      imageUrl = 'https://via.placeholder.com/50x50/ff6b6b/white?text=' + encodeURIComponent(name.substring(0, 2));
+    }
     
     tr.innerHTML = `
-      <td><strong>${item.Name || item.name}</strong></td>
-      <td>₹${parseFloat(item.Price || item.price).toFixed(2)}</td>
-      <td>${item.Category || item.category}</td>
-      <td>${(item.Type || item.type) === 'non-veg' ? '🔴' : '🟢'}</td>
+      <td><strong>${name}</strong></td>
+      <td>₹${parseFloat(price).toFixed(2)}</td>
+      <td>${category}</td>
+      <td>${type === 'non-veg' ? '🔴' : '🟢'}</td>
       <td>
-        <img src="${imageUrl}" alt="${item.Name || item.name}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px;">
+        <img src="${imageUrl}" 
+             alt="${name}" 
+             style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px;"
+             onerror="this.src='https://via.placeholder.com/50x50/ff6b6b/white?text=IMG'">
       </td>
       <td>
-        <button class="delete-btn" onclick="deleteMenuItem('${item.Name || item.name}')">
+        <button class="delete-btn" onclick="deleteMenuItem('${name.replace(/'/g, "\\'")}')">
           🗑️ Delete
         </button>
       </td>
@@ -307,18 +151,7 @@ function updateMenuTable(menu) {
   hideLoading('menuLoading');
 }
 
-// ✅ Error handling functions
-function handleFetchError(error) {
-  console.error('Fetch error:', error);
-  return null;
-}
-
-function handleJsonError(error) {
-  console.error('JSON parse error:', error);
-  return null;
-}
-
-// ✅ Add Menu Item
+// ✅ Add Menu Item with proper field mapping
 async function addMenuItem(event) {
   event.preventDefault();
   
@@ -327,6 +160,7 @@ async function addMenuItem(event) {
   const category = document.getElementById("itemCategory").value.trim();
   const description = document.getElementById("itemDescription").value.trim();
   const type = document.getElementById("itemType").value;
+  const imageFile = document.getElementById("itemImage").files[0];
   
   if (!name || !price || !category) {
     alert("Please fill all required fields");
@@ -334,6 +168,7 @@ async function addMenuItem(event) {
   }
   
   try {
+    // For now, use placeholder image
     const imageUrl = "https://via.placeholder.com/300x200/ff6b6b/white?text=" + encodeURIComponent(name);
     
     const response = await fetch(`${scriptURL}?action=addProduct&name=${encodeURIComponent(name)}&price=${price}&category=${encodeURIComponent(category)}&description=${encodeURIComponent(description)}&type=${type}&image=${encodeURIComponent(imageUrl)}`);
@@ -360,84 +195,14 @@ async function addMenuItem(event) {
   return false;
 }
 
-// ✅ Delete Menu Item
-async function deleteMenuItem(itemName) {
-  if (!confirm(`Are you sure you want to delete "${itemName}"?`)) {
-    return;
+// ✅ Utility function to handle object-to-array conversion
+function convertObjectToArray(obj) {
+  if (Array.isArray(obj)) return obj;
+  if (obj && typeof obj === 'object') {
+    return Object.keys(obj)
+      .filter(key => !isNaN(key))
+      .map(key => obj[key])
+      .filter(item => item && typeof item === 'object');
   }
-  
-  try {
-    const response = await fetch(`${scriptURL}?action=deleteProduct&name=${encodeURIComponent(itemName)}`);
-    
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
-    }
-    
-    const result = await response.json();
-    
-    if (result.status === 'success') {
-      alert('✅ Item deleted successfully!');
-      loadDashboard();
-    } else {
-      alert('❌ Failed to delete item: ' + (result.error || 'Unknown error'));
-    }
-  } catch (error) {
-    console.error('Delete item error:', error);
-    alert('❌ Network error deleting item: ' + error.message);
-  }
+  return [];
 }
-
-// ✅ Complete Order
-async function completeOrder(orderId) {
-  if (confirm('Mark this order as completed?')) {
-    alert('Order marked as completed!');
-    loadDashboard();
-  }
-}
-
-// ✅ Image Preview
-function previewImage(input) {
-  const preview = document.getElementById('imagePreview');
-  
-  if (input.files && input.files[0]) {
-    const reader = new FileReader();
-    
-    reader.onload = function(e) {
-      preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
-    };
-    
-    reader.readAsDataURL(input.files[0]);
-  } else {
-    preview.innerHTML = '<span>Image Preview</span>';
-  }
-}
-
-// ✅ Utility Functions
-function showLoading(elementId, message = 'Loading...') {
-  const element = document.getElementById(elementId);
-  if (element) {
-    element.innerHTML = message;
-    element.style.display = 'block';
-  }
-}
-
-function hideLoading(elementId) {
-  const element = document.getElementById(elementId);
-  if (element) {
-    element.style.display = 'none';
-  }
-}
-
-function showError(elementId, message) {
-  const element = document.getElementById(elementId);
-  if (element) {
-    element.innerHTML = `<div class="error">${message}</div>`;
-    element.style.display = 'block';
-  }
-}
-
-// ✅ Run on page load
-document.addEventListener("DOMContentLoaded", loadDashboard);
-
-// ✅ Auto-refresh every 30 seconds
-setInterval(loadDashboard, 30000);
