@@ -370,6 +370,7 @@ function updateCart() {
 // ---------- Place order (JSONP submit) ----------
 function placeOrder() {
   const name = document.getElementById("userName")?.value.trim();
+  const phone = document.getElementById("phone")?.value.trim();
   const email = document.getElementById("userEmail")?.value.trim();
   const table = document.getElementById("userTable")?.value.trim() || "N/A";
   const note = document.getElementById("userNote")?.value.trim() || "No note";
@@ -448,5 +449,6 @@ document.addEventListener("DOMContentLoaded", () => {
   } catch(e){ /* ignore */ }
   loadMenu().catch(err => console.error("Menu load failed", err));
 });
+
 
 
