@@ -6,7 +6,292 @@
   <title>Yadava's Admin Panel</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    /* Previous styles remain same, add these new styles */
+    * {
+      box-sizing: border-box;
+      font-family: "Poppins", sans-serif;
+    }
+    body {
+      margin: 0;
+      background-color: #f7f8fa;
+      color: #111;
+    }
+    header {
+      background: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%);
+      color: white;
+      padding: 15px 25px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 10px rgba(255, 107, 107, 0.3);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    main {
+      padding: 20px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .analytics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 15px;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      transition: 0.3s;
+      border-left: 4px solid #ff6b6b;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(255, 107, 107, 0.2);
+    }
+
+    .card h2 {
+      margin: 0;
+      font-size: 32px;
+      color: #ff6b6b;
+      font-weight: 700;
+    }
+
+    .card p {
+      margin: 8px 0 0;
+      color: #666;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 25px;
+    }
+
+    @media (max-width: 768px) {
+      .charts-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .chart-container {
+      background: #fff;
+      border-radius: 15px;
+      padding: 20px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .chart-container h3 {
+      margin-top: 0;
+      color: #333;
+      border-bottom: 2px solid #f0f0f0;
+      padding-bottom: 15px;
+    }
+
+    .section {
+      background: #fff;
+      border-radius: 15px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      padding: 25px;
+      margin-bottom: 25px;
+      border: 1px solid #f0f0f0;
+    }
+
+    .section h3 {
+      margin-top: 0;
+      font-size: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #333;
+      border-bottom: 2px solid #f0f0f0;
+      padding-bottom: 15px;
+    }
+
+    .refresh-btn {
+      background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+    }
+
+    .refresh-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 14px;
+    }
+
+    thead {
+      background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+      color: white;
+    }
+
+    tbody tr:hover {
+      background: #fff5f5;
+    }
+
+    /* Menu Editor */
+    .menu-form {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 10px;
+      border: 1px solid #e9ecef;
+    }
+
+    .menu-form input, .menu-form select, .menu-form textarea {
+      padding: 10px;
+      border: 2px solid #e9ecef;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+
+    .menu-form input:focus, .menu-form select:focus, .menu-form textarea:focus {
+      outline: none;
+      border-color: #ff6b6b;
+      box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
+    }
+
+    .menu-form button {
+      background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+      grid-column: 1 / -1;
+    }
+
+    .menu-form button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+    }
+
+    .image-preview {
+      width: 100px;
+      height: 100px;
+      border: 2px dashed #ddd;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      background: #f8f9fa;
+    }
+
+    .image-preview img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: cover;
+    }
+
+    /* Button Styles */
+    .delete-btn {
+      background: #e53e3e;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.3s ease;
+    }
+
+    .delete-btn:hover {
+      background: #c53030;
+      transform: scale(1.05);
+    }
+
+    .complete-btn {
+      background: #38a169;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.3s ease;
+    }
+
+    .complete-btn:hover {
+      background: #2f855a;
+      transform: scale(1.05);
+    }
+
+    .invoice-btn {
+      background: #3182ce;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.3s ease;
+      margin-right: 5px;
+    }
+
+    .invoice-btn:hover {
+      background: #2c5aa0;
+      transform: scale(1.05);
+    }
+
+    .status-badge {
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .status-pending {
+      background: #ffeaa7;
+      color: #e17055;
+    }
+
+    .status-completed {
+      background: #55efc4;
+      color: #00b894;
+    }
 
     /* Bill Modal Styles */
     .modal {
@@ -22,11 +307,11 @@
 
     .modal-content {
       background-color: white;
-      margin: 5% auto;
+      margin: 2% auto;
       padding: 0;
       border-radius: 15px;
-      width: 80%;
-      max-width: 600px;
+      width: 90%;
+      max-width: 500px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.3);
       animation: modalSlideIn 0.3s ease;
     }
@@ -48,7 +333,7 @@
 
     .modal-header h3 {
       margin: 0;
-      font-size: 1.5rem;
+      font-size: 1.3rem;
     }
 
     .close-modal {
@@ -61,33 +346,34 @@
     }
 
     .modal-body {
-      padding: 25px;
-      max-height: 70vh;
+      padding: 20px;
+      max-height: 80vh;
       overflow-y: auto;
     }
 
     .bill-header {
       text-align: center;
-      margin-bottom: 25px;
+      margin-bottom: 20px;
       border-bottom: 2px solid #f0f0f0;
       padding-bottom: 15px;
     }
 
     .bill-header h2 {
       color: #ff6b6b;
-      margin: 0 0 10px 0;
+      margin: 0 0 5px 0;
+      font-size: 1.5rem;
     }
 
     .bill-info {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 15px;
-      margin-bottom: 20px;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-bottom: 15px;
     }
 
     .bill-info-item {
       background: #f8f9fa;
-      padding: 12px;
+      padding: 10px;
       border-radius: 8px;
       border-left: 4px solid #ff6b6b;
     }
@@ -95,18 +381,24 @@
     .bill-info-item strong {
       display: block;
       color: #333;
-      margin-bottom: 5px;
+      margin-bottom: 3px;
+      font-size: 0.9rem;
     }
 
     .bill-items {
-      margin: 25px 0;
+      margin: 20px 0;
+    }
+
+    .bill-items h4 {
+      margin: 0 0 10px 0;
+      color: #333;
     }
 
     .bill-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 12px 0;
+      padding: 8px 0;
       border-bottom: 1px solid #f0f0f0;
     }
 
@@ -117,36 +409,39 @@
     .item-name {
       flex: 2;
       font-weight: 600;
+      font-size: 0.9rem;
     }
 
     .item-quantity {
       flex: 1;
       text-align: center;
       color: #666;
+      font-size: 0.9rem;
     }
 
     .item-price {
       flex: 1;
       text-align: right;
       font-weight: 600;
+      font-size: 0.9rem;
     }
 
     .bill-total {
       background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
       color: white;
-      padding: 20px;
+      padding: 15px;
       border-radius: 10px;
       text-align: center;
-      margin-top: 20px;
+      margin-top: 15px;
     }
 
     .bill-total h3 {
-      margin: 0 0 10px 0;
-      font-size: 1.3rem;
+      margin: 0 0 8px 0;
+      font-size: 1.1rem;
     }
 
     .bill-total .amount {
-      font-size: 2rem;
+      font-size: 1.5rem;
       font-weight: bold;
       margin: 0;
     }
@@ -154,7 +449,7 @@
     .bill-actions {
       display: flex;
       gap: 10px;
-      margin-top: 25px;
+      margin-top: 20px;
       justify-content: center;
     }
 
@@ -162,7 +457,7 @@
       background: #38a169;
       color: white;
       border: none;
-      padding: 12px 24px;
+      padding: 10px 20px;
       border-radius: 8px;
       cursor: pointer;
       font-weight: 600;
@@ -174,20 +469,51 @@
       transform: translateY(-2px);
     }
 
-    .invoice-btn {
-      background: #3182ce;
+    footer {
+      background: #333;
       color: white;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 0.8rem;
-      transition: all 0.3s ease;
+      text-align: center;
+      padding: 20px;
+      font-size: 14px;
+      margin-top: 40px;
     }
 
-    .invoice-btn:hover {
-      background: #2c5aa0;
-      transform: translateY(-1px);
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #666;
+    }
+
+    .error {
+      text-align: center;
+      padding: 20px;
+      color: #e53e3e;
+      background: #fed7d7;
+      border-radius: 8px;
+      margin: 10px 0;
+    }
+
+    @media (max-width: 768px) {
+      .menu-form {
+        grid-template-columns: 1fr;
+      }
+      
+      table {
+        font-size: 12px;
+      }
+      
+      th, td {
+        padding: 8px 10px;
+      }
+      
+      .modal-content {
+        width: 95%;
+        margin: 1% auto;
+      }
+      
+      .bill-actions {
+        flex-direction: column;
+      }
     }
 
     @media print {
@@ -329,56 +655,3 @@
         </div>
         
         <div class="bill-info">
-          <div class="bill-info-item">
-            <strong>Order ID:</strong>
-            <span id="billOrderId">-</span>
-          </div>
-          <div class="bill-info-item">
-            <strong>Date & Time:</strong>
-            <span id="billTimestamp">-</span>
-          </div>
-          <div class="bill-info-item">
-            <strong>Customer Name:</strong>
-            <span id="billCustomerName">-</span>
-          </div>
-          <div class="bill-info-item">
-            <strong>Phone:</strong>
-            <span id="billCustomerPhone">-</span>
-          </div>
-          <div class="bill-info-item">
-            <strong>Table No:</strong>
-            <span id="billTableNumber">-</span>
-          </div>
-          <div class="bill-info-item">
-            <strong>Status:</strong>
-            <span id="billStatus">-</span>
-          </div>
-        </div>
-
-        <div class="bill-items">
-          <h4>Order Items:</h4>
-          <div id="billItemsList">
-            <!-- Items will be populated here -->
-          </div>
-        </div>
-
-        <div class="bill-total">
-          <h3>Total Amount</h3>
-          <p class="amount" id="billTotalAmount">₹0.00</p>
-        </div>
-
-        <div class="bill-actions">
-          <button class="print-btn" onclick="printBill()">🖨️ Print Bill</button>
-          <button class="complete-btn" onclick="markOrderCompleted()">✅ Mark Completed</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <footer>
-    © 2025 Yadava's | Powered by Sanatan Energy 🌿
-  </footer>
-
-  <script src="admin.js"></script>
-</body>
-</html>
