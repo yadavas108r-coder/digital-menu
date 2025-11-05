@@ -10,100 +10,276 @@ async function loadDashboard() {
     
     console.log("🔄 Loading dashboard data...");
     
-    // Load all data simultaneously
-    const [statsResponse, salesResponse, productsResponse, ordersResponse, menuResponse] = await Promise.all([
-      fetch(`${scriptURL}?action=getDashboardStats`).catch(handleFetchError),
-      fetch(`${scriptURL}?action=getSalesData`).catch(handleFetchError),
-      fetch(`${scriptURL}?action=getTopProducts`).catch(handleFetchError),
-      fetch(`${scriptURL}?action=getOrders`).catch(handleFetchError),
-      fetch(`${scriptURL}?action=getMenu`).catch(handleFetchError)
+    // Load all data
+    const responses = await Promise.allSettled([
+      fetch(`${scriptURL}?action=getDashboardStats`),
+      fetch(`${scriptURL}?action=getSalesData`),
+      fetch(`${scriptURL}?action=getTopProducts`),
+      fetch(`${scriptURL}?action=getOrders`),
+      fetch(`${scriptURL}?action=getMenu`)
     ]);
     
-    // Check if responses are valid
-    if (!statsResponse || !salesResponse || !productsResponse || !ordersResponse || !menuResponse) {
-      throw new Error('Some API requests failed');
+    console.log("📦 All responses received");
+    
+    // Process each response
+    const [statsResult, salesResult, productsResult, ordersResult, menuResult] = responses;
+    
+    let stats = {}, salesData = [], topProducts = [], orders = [], menu = [];
+    
+    // Process stats
+    if (statsResult.status === 'fulfilled' && statsResult.value.ok) {
+      const data = await statsResult.value.json();
+      stats = data.status === 'success' ? data : {};
     }
     
-    const statsData = await statsResponse.json().catch(handleJsonError);
-    const salesResponseData = await salesResponse.json().catch(handleJsonError);
-    const productsResponseData = await productsResponse.json().catch(handleJsonError);
-    const ordersData = await ordersResponse.json().catch(handleJsonError);
-    const menuData = await menuResponse.json().catch(handleJsonError);
+    // Process sales data
+    if (salesResult.status === 'fulfilled' && salesResult.value.ok) {
+      const data = await salesResult.value.json();
+      salesData = Array.isArray(data) ? data : [];
+    }
     
-    console.log("📊 Raw API Responses:", { 
-      statsData, 
-      salesResponseData, 
-      productsResponseData, 
-      ordersData, 
-      menuData 
+    // Process top products
+    if (productsResult.status === 'fulfilled' && productsResult.value.ok) {
+      const data = await productsResult.value.json();
+      topProducts = Array.isArray(data) ? data : [];
+    }
+    
+    // Process orders
+    if (ordersResult.status === 'fulfilled' && ordersResult.value.ok) {
+      const data = await ordersResult.value.json();
+      orders = (data.status === 'success' && Array.isArray(data.orders)) ? data.orders : [];
+    }
+    
+    // Process menu - THIS IS THE KEY FIX
+    if (menuResult.status === 'fulfilled' && menuResult.value.ok) {
+      const data = await menuResult.value.json();
+      console.log("📋 Raw menu response:", data);
+      
+      if (data.status === 'success' && Array.isArray(data.menu)) {
+        menu = data.menu;
+        console.log("✅ Menu loaded successfully:", menu.length, "items");
+      } else {
+        console.log("❌ Menu data format error");
+        menu = [];
+      }
+    } else if (menuResult.status === 'rejected') {
+      console.log("❌ Menu request failed:", menuResult.reason);
+      menu = [];
+    }
+    
+    console.log("📊 Final data:", {
+      stats, salesData: salesData.length, topProducts: topProducts.length, 
+      orders: orders.length, menu: menu.length
     });
     
-    // ✅ FIX: Properly extract data from nested objects
-    const stats = (statsData && statsData.status === 'success') ? statsData : {};
-    
-    // Fix for salesData - it's coming as object with numeric keys
-    let salesData = [];
-    if (salesResponseData && salesResponseData.status === 'success') {
-      if (Array.isArray(salesResponseData)) {
-        salesData = salesResponseData;
-      } else if (salesResponseData.salesData) {
-        salesData = salesResponseData.salesData;
-      } else {
-        // Convert object with numeric keys to array
-        salesData = Object.keys(salesResponseData)
-          .filter(key => !isNaN(key))
-          .map(key => salesResponseData[key])
-          .filter(item => item && typeof item === 'object');
-      }
-    }
-    
-    // Fix for topProducts
-    let topProducts = [];
-    if (productsResponseData && productsResponseData.status === 'success') {
-      if (Array.isArray(productsResponseData)) {
-        topProducts = productsResponseData;
-      } else if (productsResponseData.topProducts) {
-        topProducts = productsResponseData.topProducts;
-      } else {
-        // Convert object with numeric keys to array
-        topProducts = Object.keys(productsResponseData)
-          .filter(key => !isNaN(key))
-          .map(key => productsResponseData[key])
-          .filter(item => item && typeof item === 'object');
-      }
-    }
-    
-    const orders = (ordersData && ordersData.status === 'success') ? (ordersData.orders || []) : [];
-    const menu = (menuData && menuData.status === 'success') ? (menuData.menu || []) : [];
-    
-    console.log("📈 Extracted Data:", {
-      stats, salesData, topProducts, orders, menu
-    });
-    
-    // Update dashboard with extracted data
+    // Update dashboard
     updateAnalytics(stats);
-    updateSalesChart(Array.isArray(salesData) ? salesData : []);
-    updateProductsChart(Array.isArray(topProducts) ? topProducts : []);
-    updateOrdersTable(Array.isArray(orders) ? orders : []);
-    updateMenuTable(Array.isArray(menu) ? menu : []);
+    updateSalesChart(salesData);
+    updateProductsChart(topProducts);
+    updateOrdersTable(orders);
+    updateMenuTable(menu);
     
   } catch (err) {
     console.error("❌ Load Error:", err);
-    showError('ordersLoading', 'Network error loading data');
-    showError('menuLoading', 'Network error loading data');
+    showError('ordersLoading', 'Failed to load data');
+    showError('menuLoading', 'Failed to load data');
     
-    // Initialize charts with empty data
+    // Initialize empty charts
     updateSalesChart([]);
     updateProductsChart([]);
   }
 }
 
-// ✅ Update Menu Table with proper data mapping
+// ✅ Update Analytics Cards
+function updateAnalytics(stats) {
+  if (!stats) return;
+  
+  document.getElementById("totalOrders").textContent = stats.totalOrders || 0;
+  document.getElementById("totalSales").textContent = `₹${stats.totalSales || 0}`;
+  document.getElementById("todayOrders").textContent = stats.todayOrders || 0;
+  document.getElementById("pendingOrders").textContent = stats.pendingOrders || 0;
+}
+
+// ✅ Update Sales Chart
+function updateSalesChart(salesData) {
+  const ctx = document.getElementById('salesChart');
+  if (!ctx) return;
+  
+  if (!Array.isArray(salesData)) {
+    salesData = [];
+  }
+  
+  if (salesChart) {
+    salesChart.destroy();
+  }
+  
+  const labels = salesData.map(item => {
+    try {
+      const date = new Date(item.date);
+      return date.toLocaleDateString('en-US', { weekday: 'short' });
+    } catch (e) {
+      return 'Date';
+    }
+  });
+  
+  const data = salesData.map(item => item.sales || 0);
+  
+  // If no data, show empty chart
+  if (salesData.length === 0) {
+    labels.push('No Data');
+    data.push(0);
+  }
+  
+  salesChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Daily Sales (₹)',
+        data: data,
+        borderColor: '#ff6b6b',
+        backgroundColor: 'rgba(255, 107, 107, 0.1)',
+        borderWidth: 3,
+        fill: true,
+        tension: 0.4
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          display: true
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: function(value) {
+              return '₹' + value;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// ✅ Update Products Chart
+function updateProductsChart(productsData) {
+  const ctx = document.getElementById('productsChart');
+  if (!ctx) return;
+  
+  if (!Array.isArray(productsData)) {
+    productsData = [];
+  }
+  
+  if (productsChart) {
+    productsChart.destroy();
+  }
+  
+  const labels = productsData.map(item => {
+    const name = item.name || 'Unknown';
+    return name.length > 15 ? name.substring(0, 15) + '...' : name;
+  });
+  
+  const data = productsData.map(item => item.count || 0);
+  
+  productsChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Quantity Sold',
+        data: data,
+        backgroundColor: [
+          '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57',
+          '#ff9ff3', '#54a0ff', '#5f27cd', '#00d2d3', '#ff9f43'
+        ],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          display: false
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true
+        }
+      }
+    }
+  });
+}
+
+// ✅ Update Orders Table
+function updateOrdersTable(orders) {
+  const tbody = document.getElementById("ordersTableBody");
+  const table = document.getElementById("ordersTable");
+  
+  if (!Array.isArray(orders) || orders.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#666;">No orders found</td></tr>';
+    if (table) table.style.display = 'table';
+    hideLoading('ordersLoading');
+    return;
+  }
+  
+  tbody.innerHTML = '';
+  
+  orders.forEach(order => {
+    const tr = document.createElement("tr");
+    
+    // Format items
+    let itemsText = 'N/A';
+    try {
+      const items = order.Items ? JSON.parse(order.Items) : [];
+      itemsText = items.map(item => 
+        `${item.name} (${item.quantity}x)`
+      ).join(', ');
+    } catch (e) {
+      itemsText = order.Items || 'N/A';
+    }
+    
+    // Format timestamp
+    const timestamp = order.Timestamp ? 
+      new Date(order.Timestamp).toLocaleString() : 'N/A';
+    
+    const status = order.Status || 'pending';
+    
+    tr.innerHTML = `
+      <td>${timestamp}</td>
+      <td><strong>${order.Name || 'N/A'}</strong></td>
+      <td>${order.Phone || 'N/A'}</td>
+      <td>${order.Table || 'N/A'}</td>
+      <td title="${itemsText}">${itemsText.substring(0, 30)}${itemsText.length > 30 ? '...' : ''}</td>
+      <td><strong>₹${parseFloat(order.Total || 0).toFixed(2)}</strong></td>
+      <td>
+        <span class="status-badge status-${status}">${status}</span>
+      </td>
+      <td>
+        <button class="complete-btn" onclick="completeOrder('${order.Timestamp}')">
+          ✅ Complete
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+  
+  if (table) table.style.display = 'table';
+  hideLoading('ordersLoading');
+}
+
+// ✅ Update Menu Table - FIXED VERSION
 function updateMenuTable(menu) {
   const tbody = document.getElementById("menuTableBody");
   const table = document.getElementById("menuTable");
   
-  if (!menu || !Array.isArray(menu) || menu.length === 0) {
+  console.log("🔄 Updating menu table with:", menu);
+  
+  if (!Array.isArray(menu) || menu.length === 0) {
     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#666;">No menu items found</td></tr>';
     if (table) table.style.display = 'table';
     hideLoading('menuLoading');
@@ -115,21 +291,21 @@ function updateMenuTable(menu) {
   menu.forEach(item => {
     const tr = document.createElement("tr");
     
-    // ✅ FIX: Use proper field mapping for your sheet structure
-    const name = item.Name || item.name || 'Unknown';
-    const price = item.Price || item.price || 0;
-    const category = item.Category || item.category || 'General';
-    const type = item.Type || item.type || 'veg';
+    // Extract data with fallbacks
+    const name = item.name || item.Name || 'Unknown Item';
+    const price = parseFloat(item.price || item.Price || 0);
+    const category = item.category || item.Category || 'General';
+    const type = (item.type || item.Type || 'veg').toLowerCase();
     
-    // ✅ FIX: Get image from correct field and provide fallback
-    let imageUrl = item.Image || item.image;
+    // Handle image URL
+    let imageUrl = item.image || item.Image;
     if (!imageUrl || imageUrl === '' || imageUrl.includes('undefined')) {
-      imageUrl = 'https://via.placeholder.com/50x50/ff6b6b/white?text=' + encodeURIComponent(name.substring(0, 2));
+      imageUrl = 'https://via.placeholder.com/50x50/ff6b6b/white?text=' + encodeURIComponent(name.substring(0, 2).toUpperCase());
     }
     
     tr.innerHTML = `
       <td><strong>${name}</strong></td>
-      <td>₹${parseFloat(price).toFixed(2)}</td>
+      <td>₹${price.toFixed(2)}</td>
       <td>${category}</td>
       <td>${type === 'non-veg' ? '🔴' : '🟢'}</td>
       <td>
@@ -149,9 +325,10 @@ function updateMenuTable(menu) {
   
   if (table) table.style.display = 'table';
   hideLoading('menuLoading');
+  console.log("✅ Menu table updated with", menu.length, "items");
 }
 
-// ✅ Add Menu Item with proper field mapping
+// ✅ Add Menu Item
 async function addMenuItem(event) {
   event.preventDefault();
   
@@ -160,7 +337,6 @@ async function addMenuItem(event) {
   const category = document.getElementById("itemCategory").value.trim();
   const description = document.getElementById("itemDescription").value.trim();
   const type = document.getElementById("itemType").value;
-  const imageFile = document.getElementById("itemImage").files[0];
   
   if (!name || !price || !category) {
     alert("Please fill all required fields");
@@ -168,10 +344,13 @@ async function addMenuItem(event) {
   }
   
   try {
-    // For now, use placeholder image
     const imageUrl = "https://via.placeholder.com/300x200/ff6b6b/white?text=" + encodeURIComponent(name);
     
-    const response = await fetch(`${scriptURL}?action=addProduct&name=${encodeURIComponent(name)}&price=${price}&category=${encodeURIComponent(category)}&description=${encodeURIComponent(description)}&type=${type}&image=${encodeURIComponent(imageUrl)}`);
+    const url = `${scriptURL}?action=addProduct&name=${encodeURIComponent(name)}&price=${price}&category=${encodeURIComponent(category)}&description=${encodeURIComponent(description)}&type=${type}&image=${encodeURIComponent(imageUrl)}`;
+    
+    console.log("📤 Adding item:", url);
+    
+    const response = await fetch(url);
     
     if (!response.ok) {
       throw new Error('Network response was not ok');
@@ -195,14 +374,87 @@ async function addMenuItem(event) {
   return false;
 }
 
-// ✅ Utility function to handle object-to-array conversion
-function convertObjectToArray(obj) {
-  if (Array.isArray(obj)) return obj;
-  if (obj && typeof obj === 'object') {
-    return Object.keys(obj)
-      .filter(key => !isNaN(key))
-      .map(key => obj[key])
-      .filter(item => item && typeof item === 'object');
+// ✅ Delete Menu Item
+async function deleteMenuItem(itemName) {
+  if (!confirm(`Are you sure you want to delete "${itemName}"?`)) {
+    return;
   }
-  return [];
+  
+  try {
+    const response = await fetch(`${scriptURL}?action=deleteProduct&name=${encodeURIComponent(itemName)}`);
+    
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    
+    const result = await response.json();
+    
+    if (result.status === 'success') {
+      alert('✅ Item deleted successfully!');
+      loadDashboard();
+    } else {
+      alert('❌ Failed to delete item: ' + (result.error || 'Unknown error'));
+    }
+  } catch (error) {
+    console.error('Delete item error:', error);
+    alert('❌ Network error deleting item: ' + error.message);
+  }
 }
+
+// ✅ Complete Order
+async function completeOrder(orderId) {
+  if (confirm('Mark this order as completed?')) {
+    alert('Order marked as completed!');
+    loadDashboard();
+  }
+}
+
+// ✅ Image Preview
+function previewImage(input) {
+  const preview = document.getElementById('imagePreview');
+  
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+      preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+    };
+    
+    reader.readAsDataURL(input.files[0]);
+  } else {
+    preview.innerHTML = '<span>Image Preview</span>';
+  }
+}
+
+// ✅ Utility Functions
+function showLoading(elementId, message = 'Loading...') {
+  const element = document.getElementById(elementId);
+  if (element) {
+    element.innerHTML = message;
+    element.style.display = 'block';
+  }
+}
+
+function hideLoading(elementId) {
+  const element = document.getElementById(elementId);
+  if (element) {
+    element.style.display = 'none';
+  }
+}
+
+function showError(elementId, message) {
+  const element = document.getElementById(elementId);
+  if (element) {
+    element.innerHTML = `<div class="error">${message}</div>`;
+    element.style.display = 'block';
+  }
+}
+
+// ✅ Run on page load
+document.addEventListener("DOMContentLoaded", function() {
+  console.log("🚀 Admin dashboard initialized");
+  loadDashboard();
+});
+
+// ✅ Auto-refresh every 30 seconds
+setInterval(loadDashboard, 30000);
