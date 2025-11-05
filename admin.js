@@ -2,7 +2,7 @@ const scriptURL = "https://script.google.com/macros/s/AKfycbyYXyDhUbqdhau8XeDdKb
 
 let salesChart, productsChart;
 
-// ✅ Load Dashboard Data
+// ✅ Load Dashboard Data - FIXED VERSION
 async function loadDashboard() {
   try {
     showLoading('ordersLoading', 'Loading orders...');
@@ -10,69 +10,38 @@ async function loadDashboard() {
     
     console.log("🔄 Loading dashboard data...");
     
-    // Load all data
-    const responses = await Promise.allSettled([
-      fetch(`${scriptURL}?action=getDashboardStats`),
-      fetch(`${scriptURL}?action=getSalesData`),
-      fetch(`${scriptURL}?action=getTopProducts`),
-      fetch(`${scriptURL}?action=getOrders`),
-      fetch(`${scriptURL}?action=getMenu`)
-    ]);
+    // Load all data with timeout protection
+    const loadPromises = [
+      loadData('getDashboardStats'),
+      loadData('getSalesData'), 
+      loadData('getTopProducts'),
+      loadData('getOrders'),
+      loadData('getMenu')
+    ];
     
-    console.log("📦 All responses received");
+    const results = await Promise.allSettled(loadPromises);
     
-    // Process each response
-    const [statsResult, salesResult, productsResult, ordersResult, menuResult] = responses;
+    console.log("📦 All data loaded:", results);
     
-    let stats = {}, salesData = [], topProducts = [], orders = [], menu = [];
+    // Process results
+    const [statsResult, salesResult, productsResult, ordersResult, menuResult] = results;
     
-    // Process stats
-    if (statsResult.status === 'fulfilled' && statsResult.value.ok) {
-      const data = await statsResult.value.json();
-      stats = data.status === 'success' ? data : {};
-    }
+    // Extract data with proper error handling
+    const stats = extractData(statsResult);
+    const salesData = extractData(salesResult, true);
+    const topProducts = extractData(productsResult, true);
+    const orders = extractData(ordersResult)?.orders || [];
+    const menu = extractData(menuResult)?.menu || [];
     
-    // Process sales data
-    if (salesResult.status === 'fulfilled' && salesResult.value.ok) {
-      const data = await salesResult.value.json();
-      salesData = Array.isArray(data) ? data : [];
-    }
-    
-    // Process top products
-    if (productsResult.status === 'fulfilled' && productsResult.value.ok) {
-      const data = await productsResult.value.json();
-      topProducts = Array.isArray(data) ? data : [];
-    }
-    
-    // Process orders
-    if (ordersResult.status === 'fulfilled' && ordersResult.value.ok) {
-      const data = await ordersResult.value.json();
-      orders = (data.status === 'success' && Array.isArray(data.orders)) ? data.orders : [];
-    }
-    
-    // Process menu - THIS IS THE KEY FIX
-    if (menuResult.status === 'fulfilled' && menuResult.value.ok) {
-      const data = await menuResult.value.json();
-      console.log("📋 Raw menu response:", data);
-      
-      if (data.status === 'success' && Array.isArray(data.menu)) {
-        menu = data.menu;
-        console.log("✅ Menu loaded successfully:", menu.length, "items");
-      } else {
-        console.log("❌ Menu data format error");
-        menu = [];
-      }
-    } else if (menuResult.status === 'rejected') {
-      console.log("❌ Menu request failed:", menuResult.reason);
-      menu = [];
-    }
-    
-    console.log("📊 Final data:", {
-      stats, salesData: salesData.length, topProducts: topProducts.length, 
-      orders: orders.length, menu: menu.length
+    console.log("📊 Extracted data:", {
+      stats: !!stats,
+      salesData: salesData.length,
+      topProducts: topProducts.length,
+      orders: orders.length,
+      menu: menu.length
     });
     
-    // Update dashboard
+    // Update UI
     updateAnalytics(stats);
     updateSalesChart(salesData);
     updateProductsChart(topProducts);
@@ -81,13 +50,47 @@ async function loadDashboard() {
     
   } catch (err) {
     console.error("❌ Load Error:", err);
-    showError('ordersLoading', 'Failed to load data');
-    showError('menuLoading', 'Failed to load data');
+    showError('ordersLoading', 'Failed to load data. Please refresh.');
+    showError('menuLoading', 'Failed to load data. Please refresh.');
     
-    // Initialize empty charts
+    // Show empty states
     updateSalesChart([]);
     updateProductsChart([]);
   }
+}
+
+// ✅ Helper function to load data with timeout
+async function loadData(action) {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    
+    const response = await fetch(`${scriptURL}?action=${action}`, {
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error(`❌ Error loading ${action}:`, error);
+    return null;
+  }
+}
+
+// ✅ Helper function to extract data from response
+function extractData(result, isArray = false) {
+  if (result.status === 'fulfilled' && result.value) {
+    const data = result.value;
+    if (data.status === 'success') {
+      return isArray ? (Array.isArray(data) ? data : []) : data;
+    }
+  }
+  return isArray ? [] : {};
 }
 
 // ✅ Update Analytics Cards
@@ -113,22 +116,18 @@ function updateSalesChart(salesData) {
     salesChart.destroy();
   }
   
-  const labels = salesData.map(item => {
-    try {
-      const date = new Date(item.date);
-      return date.toLocaleDateString('en-US', { weekday: 'short' });
-    } catch (e) {
-      return 'Date';
-    }
-  });
+  const labels = salesData.length > 0 ? 
+    salesData.map(item => {
+      try {
+        const date = new Date(item.date);
+        return date.toLocaleDateString('en-US', { weekday: 'short' });
+      } catch (e) {
+        return 'Date';
+      }
+    }) : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   
-  const data = salesData.map(item => item.sales || 0);
-  
-  // If no data, show empty chart
-  if (salesData.length === 0) {
-    labels.push('No Data');
-    data.push(0);
-  }
+  const data = salesData.length > 0 ? 
+    salesData.map(item => item.sales || 0) : [0, 0, 0, 0, 0, 0, 0];
   
   salesChart = new Chart(ctx, {
     type: 'line',
@@ -178,12 +177,14 @@ function updateProductsChart(productsData) {
     productsChart.destroy();
   }
   
-  const labels = productsData.map(item => {
-    const name = item.name || 'Unknown';
-    return name.length > 15 ? name.substring(0, 15) + '...' : name;
-  });
+  const labels = productsData.length > 0 ? 
+    productsData.map(item => {
+      const name = item.name || 'Unknown';
+      return name.length > 15 ? name.substring(0, 15) + '...' : name;
+    }) : ['No Data'];
   
-  const data = productsData.map(item => item.count || 0);
+  const data = productsData.length > 0 ? 
+    productsData.map(item => item.count || 0) : [0];
   
   productsChart = new Chart(ctx, {
     type: 'bar',
@@ -221,7 +222,7 @@ function updateOrdersTable(orders) {
   const table = document.getElementById("ordersTable");
   
   if (!Array.isArray(orders) || orders.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#666;">No orders found</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#666; padding: 20px;">No orders found</td></tr>';
     if (table) table.style.display = 'table';
     hideLoading('ordersLoading');
     return;
@@ -234,9 +235,10 @@ function updateOrdersTable(orders) {
     
     // Format items
     let itemsText = 'N/A';
+    let itemsArray = [];
     try {
-      const items = order.Items ? JSON.parse(order.Items) : [];
-      itemsText = items.map(item => 
+      itemsArray = order.Items ? JSON.parse(order.Items) : [];
+      itemsText = itemsArray.map(item => 
         `${item.name} (${item.quantity}x)`
       ).join(', ');
     } catch (e) {
@@ -248,166 +250,7 @@ function updateOrdersTable(orders) {
       new Date(order.Timestamp).toLocaleString() : 'N/A';
     
     const status = order.Status || 'pending';
-    
-    tr.innerHTML = `
-      <td>${timestamp}</td>
-      <td><strong>${order.Name || 'N/A'}</strong></td>
-      <td>${order.Phone || 'N/A'}</td>
-      <td>${order.Table || 'N/A'}</td>
-      <td title="${itemsText}">${itemsText.substring(0, 30)}${itemsText.length > 30 ? '...' : ''}</td>
-      <td><strong>₹${parseFloat(order.Total || 0).toFixed(2)}</strong></td>
-      <td>
-        <span class="status-badge status-${status}">${status}</span>
-      </td>
-      <td>
-        <button class="complete-btn" onclick="completeOrder('${order.Timestamp}')">
-          ✅ Complete
-        </button>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
-  
-  if (table) table.style.display = 'table';
-  hideLoading('ordersLoading');
-}
-
-// ✅ Bill/Invoice Functions
-let currentBillOrderId = null;
-
-// Generate and show bill
-async function generateBill(orderId) {
-  try {
-    console.log("🧾 Generating bill for order:", orderId);
-    
-    const response = await fetch(`${scriptURL}?action=generateBill&orderId=${encodeURIComponent(orderId)}`);
-    
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
-    }
-    
-    const result = await response.json();
-    
-    if (result.status === 'success') {
-      displayBill(result.bill);
-      currentBillOrderId = orderId;
-    } else {
-      alert('❌ Failed to generate bill: ' + (result.error || 'Unknown error'));
-    }
-  } catch (error) {
-    console.error('Generate bill error:', error);
-    alert('❌ Error generating bill: ' + error.message);
-  }
-}
-
-// Display bill in modal
-function displayBill(billData) {
-  console.log("📄 Displaying bill:", billData);
-  
-  // Populate bill data
-  document.getElementById('billOrderId').textContent = billData.orderId || 'N/A';
-  document.getElementById('billTimestamp').textContent = billData.timestamp ? 
-    new Date(billData.timestamp).toLocaleString() : 'N/A';
-  document.getElementById('billCustomerName').textContent = billData.customerName || 'N/A';
-  document.getElementById('billCustomerPhone').textContent = billData.customerPhone || 'N/A';
-  document.getElementById('billTableNumber').textContent = billData.tableNumber || 'N/A';
-  document.getElementById('billStatus').textContent = billData.status || 'pending';
-  document.getElementById('billTotalAmount').textContent = `₹${parseFloat(billData.totalAmount || 0).toFixed(2)}`;
-  
-  // Populate items
-  const itemsList = document.getElementById('billItemsList');
-  itemsList.innerHTML = '';
-  
-  if (billData.items && Array.isArray(billData.items)) {
-    billData.items.forEach(item => {
-      const itemElement = document.createElement('div');
-      itemElement.className = 'bill-item';
-      itemElement.innerHTML = `
-        <div class="item-name">${item.name || 'Unknown Item'}</div>
-        <div class="item-quantity">${item.quantity || 1}x</div>
-        <div class="item-price">₹${parseFloat(item.price || 0).toFixed(2)}</div>
-      `;
-      itemsList.appendChild(itemElement);
-    });
-  } else {
-    itemsList.innerHTML = '<div class="bill-item"><div class="item-name">No items found</div></div>';
-  }
-  
-  // Show modal
-  document.getElementById('billModal').style.display = 'block';
-}
-
-// Close bill modal
-function closeBillModal() {
-  document.getElementById('billModal').style.display = 'none';
-  currentBillOrderId = null;
-}
-
-// Print bill
-function printBill() {
-  window.print();
-}
-
-// Mark order as completed
-async function markOrderCompleted() {
-  if (!currentBillOrderId) return;
-  
-  try {
-    const response = await fetch(`${scriptURL}?action=updateOrderStatus&orderId=${encodeURIComponent(currentBillOrderId)}&status=completed`);
-    
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
-    }
-    
-    const result = await response.json();
-    
-    if (result.status === 'success') {
-      alert('✅ Order marked as completed!');
-      closeBillModal();
-      loadDashboard(); // Refresh dashboard
-    } else {
-      alert('❌ Failed to update order status: ' + (result.error || 'Unknown error'));
-    }
-  } catch (error) {
-    console.error('Update status error:', error);
-    alert('❌ Error updating order status: ' + error.message);
-  }
-}
-
-// ✅ Update Orders Table to include bill button
-function updateOrdersTable(orders) {
-  const tbody = document.getElementById("ordersTableBody");
-  const table = document.getElementById("ordersTable");
-  
-  if (!Array.isArray(orders) || orders.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:#666;">No orders found</td></tr>';
-    if (table) table.style.display = 'table';
-    hideLoading('ordersLoading');
-    return;
-  }
-  
-  tbody.innerHTML = '';
-  
-  orders.forEach(order => {
-    const tr = document.createElement("tr");
-    
-    // Format items
-    let itemsText = 'N/A';
-    try {
-      const items = order.Items ? JSON.parse(order.Items) : [];
-      itemsText = items.map(item => 
-        `${item.name} (${item.quantity}x)`
-      ).join(', ');
-    } catch (e) {
-      itemsText = order.Items || 'N/A';
-    }
-    
-    // Format timestamp
-    const timestamp = order.Timestamp ? 
-      new Date(order.Timestamp).toLocaleString() : 'N/A';
-    
-    const status = order.Status || 'pending';
-    const orderId = order.Timestamp || order.id || 'N/A';
+    const orderId = order.Timestamp || Math.random().toString(36).substr(2, 9);
     
     tr.innerHTML = `
       <td>${timestamp}</td>
@@ -433,50 +276,18 @@ function updateOrdersTable(orders) {
   
   if (table) table.style.display = 'table';
   hideLoading('ordersLoading');
+  console.log("✅ Orders table updated with", orders.length, "orders");
 }
 
-// ✅ Close modal when clicking outside
-window.onclick = function(event) {
-  const modal = document.getElementById('billModal');
-  if (event.target === modal) {
-    closeBillModal();
-  }
-}
-
-// ✅ Complete Order function update
-async function completeOrder(orderId) {
-  if (confirm('Mark this order as completed?')) {
-    try {
-      const response = await fetch(`${scriptURL}?action=updateOrderStatus&orderId=${encodeURIComponent(orderId)}&status=completed`);
-      
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-      
-      const result = await response.json();
-      
-      if (result.status === 'success') {
-        alert('✅ Order marked as completed!');
-        loadDashboard();
-      } else {
-        alert('❌ Failed to update order status: ' + (result.error || 'Unknown error'));
-      }
-    } catch (error) {
-      console.error('Complete order error:', error);
-      alert('❌ Error completing order: ' + error.message);
-    }
-  }
-}
-
-// ✅ Update Menu Table - FIXED VERSION
+// ✅ Update Menu Table
 function updateMenuTable(menu) {
   const tbody = document.getElementById("menuTableBody");
   const table = document.getElementById("menuTable");
   
-  console.log("🔄 Updating menu table with:", menu);
+  console.log("🔄 Updating menu table with data:", menu);
   
   if (!Array.isArray(menu) || menu.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#666;">No menu items found</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#666; padding: 20px;">No menu items found</td></tr>';
     if (table) table.style.display = 'table';
     hideLoading('menuLoading');
     return;
@@ -597,11 +408,99 @@ async function deleteMenuItem(itemName) {
   }
 }
 
+// ✅ Generate Bill
+async function generateBill(orderId) {
+  try {
+    console.log("🧾 Generating bill for order:", orderId);
+    
+    const response = await fetch(`${scriptURL}?action=generateBill&orderId=${encodeURIComponent(orderId)}`);
+    
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    
+    const result = await response.json();
+    
+    if (result.status === 'success') {
+      displayBill(result.bill);
+    } else {
+      alert('❌ Failed to generate bill: ' + (result.error || 'Unknown error'));
+    }
+  } catch (error) {
+    console.error('Generate bill error:', error);
+    alert('❌ Error generating bill: ' + error.message);
+  }
+}
+
+// ✅ Display Bill
+function displayBill(billData) {
+  console.log("📄 Displaying bill:", billData);
+  
+  // Populate bill data
+  document.getElementById('billOrderId').textContent = billData.orderId || 'N/A';
+  document.getElementById('billTimestamp').textContent = billData.timestamp ? 
+    new Date(billData.timestamp).toLocaleString() : 'N/A';
+  document.getElementById('billCustomerName').textContent = billData.customerName || 'N/A';
+  document.getElementById('billCustomerPhone').textContent = billData.customerPhone || 'N/A';
+  document.getElementById('billTableNumber').textContent = billData.tableNumber || 'N/A';
+  document.getElementById('billStatus').textContent = billData.status || 'pending';
+  document.getElementById('billTotalAmount').textContent = `₹${parseFloat(billData.totalAmount || 0).toFixed(2)}`;
+  
+  // Populate items
+  const itemsList = document.getElementById('billItemsList');
+  itemsList.innerHTML = '';
+  
+  if (billData.items && Array.isArray(billData.items)) {
+    billData.items.forEach(item => {
+      const itemElement = document.createElement('div');
+      itemElement.className = 'bill-item';
+      itemElement.innerHTML = `
+        <div class="item-name">${item.name || 'Unknown Item'}</div>
+        <div class="item-quantity">${item.quantity || 1}x</div>
+        <div class="item-price">₹${parseFloat(item.price || 0).toFixed(2)}</div>
+      `;
+      itemsList.appendChild(itemElement);
+    });
+  } else {
+    itemsList.innerHTML = '<div class="bill-item"><div class="item-name">No items found</div></div>';
+  }
+  
+  // Show modal
+  document.getElementById('billModal').style.display = 'block';
+}
+
+// ✅ Close Bill Modal
+function closeBillModal() {
+  document.getElementById('billModal').style.display = 'none';
+}
+
+// ✅ Print Bill
+function printBill() {
+  window.print();
+}
+
 // ✅ Complete Order
 async function completeOrder(orderId) {
   if (confirm('Mark this order as completed?')) {
-    alert('Order marked as completed!');
-    loadDashboard();
+    try {
+      const response = await fetch(`${scriptURL}?action=updateOrderStatus&orderId=${encodeURIComponent(orderId)}&status=completed`);
+      
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      
+      const result = await response.json();
+      
+      if (result.status === 'success') {
+        alert('✅ Order marked as completed!');
+        loadDashboard();
+      } else {
+        alert('❌ Failed to update order status: ' + (result.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Complete order error:', error);
+      alert('❌ Error completing order: ' + error.message);
+    }
   }
 }
 
@@ -643,6 +542,14 @@ function showError(elementId, message) {
   if (element) {
     element.innerHTML = `<div class="error">${message}</div>`;
     element.style.display = 'block';
+  }
+}
+
+// ✅ Close modal when clicking outside
+window.onclick = function(event) {
+  const modal = document.getElementById('billModal');
+  if (event.target === modal) {
+    closeBillModal();
   }
 }
 
