@@ -272,6 +272,202 @@ function updateOrdersTable(orders) {
   hideLoading('ordersLoading');
 }
 
+// ✅ Bill/Invoice Functions
+let currentBillOrderId = null;
+
+// Generate and show bill
+async function generateBill(orderId) {
+  try {
+    console.log("🧾 Generating bill for order:", orderId);
+    
+    const response = await fetch(`${scriptURL}?action=generateBill&orderId=${encodeURIComponent(orderId)}`);
+    
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    
+    const result = await response.json();
+    
+    if (result.status === 'success') {
+      displayBill(result.bill);
+      currentBillOrderId = orderId;
+    } else {
+      alert('❌ Failed to generate bill: ' + (result.error || 'Unknown error'));
+    }
+  } catch (error) {
+    console.error('Generate bill error:', error);
+    alert('❌ Error generating bill: ' + error.message);
+  }
+}
+
+// Display bill in modal
+function displayBill(billData) {
+  console.log("📄 Displaying bill:", billData);
+  
+  // Populate bill data
+  document.getElementById('billOrderId').textContent = billData.orderId || 'N/A';
+  document.getElementById('billTimestamp').textContent = billData.timestamp ? 
+    new Date(billData.timestamp).toLocaleString() : 'N/A';
+  document.getElementById('billCustomerName').textContent = billData.customerName || 'N/A';
+  document.getElementById('billCustomerPhone').textContent = billData.customerPhone || 'N/A';
+  document.getElementById('billTableNumber').textContent = billData.tableNumber || 'N/A';
+  document.getElementById('billStatus').textContent = billData.status || 'pending';
+  document.getElementById('billTotalAmount').textContent = `₹${parseFloat(billData.totalAmount || 0).toFixed(2)}`;
+  
+  // Populate items
+  const itemsList = document.getElementById('billItemsList');
+  itemsList.innerHTML = '';
+  
+  if (billData.items && Array.isArray(billData.items)) {
+    billData.items.forEach(item => {
+      const itemElement = document.createElement('div');
+      itemElement.className = 'bill-item';
+      itemElement.innerHTML = `
+        <div class="item-name">${item.name || 'Unknown Item'}</div>
+        <div class="item-quantity">${item.quantity || 1}x</div>
+        <div class="item-price">₹${parseFloat(item.price || 0).toFixed(2)}</div>
+      `;
+      itemsList.appendChild(itemElement);
+    });
+  } else {
+    itemsList.innerHTML = '<div class="bill-item"><div class="item-name">No items found</div></div>';
+  }
+  
+  // Show modal
+  document.getElementById('billModal').style.display = 'block';
+}
+
+// Close bill modal
+function closeBillModal() {
+  document.getElementById('billModal').style.display = 'none';
+  currentBillOrderId = null;
+}
+
+// Print bill
+function printBill() {
+  window.print();
+}
+
+// Mark order as completed
+async function markOrderCompleted() {
+  if (!currentBillOrderId) return;
+  
+  try {
+    const response = await fetch(`${scriptURL}?action=updateOrderStatus&orderId=${encodeURIComponent(currentBillOrderId)}&status=completed`);
+    
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    
+    const result = await response.json();
+    
+    if (result.status === 'success') {
+      alert('✅ Order marked as completed!');
+      closeBillModal();
+      loadDashboard(); // Refresh dashboard
+    } else {
+      alert('❌ Failed to update order status: ' + (result.error || 'Unknown error'));
+    }
+  } catch (error) {
+    console.error('Update status error:', error);
+    alert('❌ Error updating order status: ' + error.message);
+  }
+}
+
+// ✅ Update Orders Table to include bill button
+function updateOrdersTable(orders) {
+  const tbody = document.getElementById("ordersTableBody");
+  const table = document.getElementById("ordersTable");
+  
+  if (!Array.isArray(orders) || orders.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:#666;">No orders found</td></tr>';
+    if (table) table.style.display = 'table';
+    hideLoading('ordersLoading');
+    return;
+  }
+  
+  tbody.innerHTML = '';
+  
+  orders.forEach(order => {
+    const tr = document.createElement("tr");
+    
+    // Format items
+    let itemsText = 'N/A';
+    try {
+      const items = order.Items ? JSON.parse(order.Items) : [];
+      itemsText = items.map(item => 
+        `${item.name} (${item.quantity}x)`
+      ).join(', ');
+    } catch (e) {
+      itemsText = order.Items || 'N/A';
+    }
+    
+    // Format timestamp
+    const timestamp = order.Timestamp ? 
+      new Date(order.Timestamp).toLocaleString() : 'N/A';
+    
+    const status = order.Status || 'pending';
+    const orderId = order.Timestamp || order.id || 'N/A';
+    
+    tr.innerHTML = `
+      <td>${timestamp}</td>
+      <td><strong>${order.Name || 'N/A'}</strong></td>
+      <td>${order.Phone || 'N/A'}</td>
+      <td>${order.Table || 'N/A'}</td>
+      <td title="${itemsText}">${itemsText.substring(0, 30)}${itemsText.length > 30 ? '...' : ''}</td>
+      <td><strong>₹${parseFloat(order.Total || 0).toFixed(2)}</strong></td>
+      <td>
+        <span class="status-badge status-${status}">${status}</span>
+      </td>
+      <td>
+        <button class="invoice-btn" onclick="generateBill('${orderId}')">
+          🧾 Bill
+        </button>
+        <button class="complete-btn" onclick="completeOrder('${orderId}')">
+          ✅ Complete
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+  
+  if (table) table.style.display = 'table';
+  hideLoading('ordersLoading');
+}
+
+// ✅ Close modal when clicking outside
+window.onclick = function(event) {
+  const modal = document.getElementById('billModal');
+  if (event.target === modal) {
+    closeBillModal();
+  }
+}
+
+// ✅ Complete Order function update
+async function completeOrder(orderId) {
+  if (confirm('Mark this order as completed?')) {
+    try {
+      const response = await fetch(`${scriptURL}?action=updateOrderStatus&orderId=${encodeURIComponent(orderId)}&status=completed`);
+      
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      
+      const result = await response.json();
+      
+      if (result.status === 'success') {
+        alert('✅ Order marked as completed!');
+        loadDashboard();
+      } else {
+        alert('❌ Failed to update order status: ' + (result.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Complete order error:', error);
+      alert('❌ Error completing order: ' + error.message);
+    }
+  }
+}
+
 // ✅ Update Menu Table - FIXED VERSION
 function updateMenuTable(menu) {
   const tbody = document.getElementById("menuTableBody");
