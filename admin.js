@@ -1,46 +1,370 @@
-const scriptURL = "https://script.google.com/macros/s/AKfycbyii5UZmz-aVDjb-FXYCPIW_7d4-GBReGRH2dOeX2lYYl4Si2wmbQU3RrGOqVvqEoiV/exec"; // 👈 Replace with your deployed script URL
+const scriptURL = "https://script.google.com/macros/s/AKfycbyYXyDhUbqdhau8XeDdKbKzvsyNJEJ0gL7h2ucTgjZ_cJrxdG6ZkAp-f0ecL7yWDdw/exec";
 
-// ✅ Load Orders + Analytics
+let salesChart, productsChart;
+
+// ✅ Load Dashboard Data
 async function loadDashboard() {
   try {
-    const res = await fetch(`${scriptURL}?action=getOrders`);
-    const data = await res.json();
-
-    console.log("📊 Loaded Data:", data);
-
-    if (!data || !data.orders) return;
-
-    // Analytics Summary
-    const orders = data.orders;
-    document.getElementById("totalOrders").textContent = orders.length;
-    const totalSales = orders.reduce((sum, o) => sum + Number(o.Total || 0), 0);
-    document.getElementById("totalSales").textContent = `₹${totalSales}`;
-
-    const today = new Date().toLocaleDateString();
-    const todayOrders = orders.filter(o => new Date(o.Timestamp).toLocaleDateString() === today).length;
-    document.getElementById("todayOrders").textContent = todayOrders;
-
-    // Orders Table
-    const tbody = document.getElementById("ordersTableBody");
-    tbody.innerHTML = "";
-    orders.forEach(order => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${order.Timestamp || ""}</td>
-        <td>${order.Name || ""}</td>
-        <td>${order.Table || ""}</td>
-        <td>${order.Items || ""}</td>
-        <td>₹${order.Total || 0}</td>
-        <td>${order.Review || ""}</td>
-        <td>${order["Customer Email"] || ""}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-
+    showLoading('ordersLoading', 'Loading orders...');
+    showLoading('menuLoading', 'Loading menu...');
+    
+    // Load all data simultaneously
+    const [statsResponse, salesResponse, productsResponse, ordersResponse, menuResponse] = await Promise.all([
+      fetch(`${scriptURL}?action=getDashboardStats`),
+      fetch(`${scriptURL}?action=getSalesData`),
+      fetch(`${scriptURL}?action=getTopProducts`),
+      fetch(`${scriptURL}?action=getOrders`),
+      fetch(`${scriptURL}?action=getMenu`)
+    ]);
+    
+    const stats = await statsResponse.json();
+    const salesData = await salesResponse.json();
+    const topProducts = await productsResponse.json();
+    const ordersData = await ordersResponse.json();
+    const menuData = await menuResponse.json();
+    
+    if (stats.status === 'success') {
+      updateAnalytics(stats);
+    }
+    
+    if (salesData.status === 'success') {
+      updateSalesChart(salesData);
+    }
+    
+    if (topProducts.status === 'success') {
+      updateProductsChart(topProducts);
+    }
+    
+    if (ordersData.status === 'success') {
+      updateOrdersTable(ordersData.orders);
+    } else {
+      showError('ordersLoading', 'Failed to load orders');
+    }
+    
+    if (menuData.status === 'success') {
+      updateMenuTable(menuData.menu);
+    } else {
+      showError('menuLoading', 'Failed to load menu');
+    }
+    
   } catch (err) {
     console.error("❌ Load Error:", err);
+    showError('ordersLoading', 'Network error loading data');
+    showError('menuLoading', 'Network error loading data');
+  }
+}
+
+// ✅ Update Analytics Cards
+function updateAnalytics(stats) {
+  document.getElementById("totalOrders").textContent = stats.totalOrders;
+  document.getElementById("totalSales").textContent = `₹${stats.totalSales}`;
+  document.getElementById("todayOrders").textContent = stats.todayOrders;
+  document.getElementById("pendingOrders").textContent = stats.pendingOrders;
+}
+
+// ✅ Update Sales Chart
+function updateSalesChart(salesData) {
+  const ctx = document.getElementById('salesChart').getContext('2d');
+  
+  if (salesChart) {
+    salesChart.destroy();
+  }
+  
+  const labels = salesData.map(item => {
+    const date = new Date(item.date);
+    return date.toLocaleDateString('en-US', { weekday: 'short' });
+  });
+  
+  const data = salesData.map(item => item.sales);
+  
+  salesChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Daily Sales (₹)',
+        data: data,
+        borderColor: '#ff6b6b',
+        backgroundColor: 'rgba(255, 107, 107, 0.1)',
+        borderWidth: 3,
+        fill: true,
+        tension: 0.4
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          display: true
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: function(value) {
+              return '₹' + value;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// ✅ Update Products Chart
+function updateProductsChart(productsData) {
+  const ctx = document.getElementById('productsChart').getContext('2d');
+  
+  if (productsChart) {
+    productsChart.destroy();
+  }
+  
+  const labels = productsData.map(item => item.name);
+  const data = productsData.map(item => item.count);
+  
+  productsChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Quantity Sold',
+        data: data,
+        backgroundColor: [
+          '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57',
+          '#ff9ff3', '#54a0ff', '#5f27cd', '#00d2d3', '#ff9f43'
+        ],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          display: false
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true
+        }
+      }
+    }
+  });
+}
+
+// ✅ Update Orders Table
+function updateOrdersTable(orders) {
+  const tbody = document.getElementById("ordersTableBody");
+  const table = document.getElementById("ordersTable");
+  
+  if (!orders || orders.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#666;">No orders found</td></tr>';
+    table.style.display = 'table';
+    hideLoading('ordersLoading');
+    return;
+  }
+  
+  tbody.innerHTML = '';
+  
+  orders.forEach(order => {
+    const tr = document.createElement("tr");
+    
+    // Format items for display
+    let itemsText = 'N/A';
+    try {
+      const items = order.Items ? JSON.parse(order.Items) : [];
+      itemsText = items.map(item => 
+        `${item.name} (${item.quantity}x)`
+      ).join(', ');
+    } catch (e) {
+      itemsText = order.Items || 'N/A';
+    }
+    
+    // Format timestamp
+    const timestamp = order.Timestamp ? 
+      new Date(order.Timestamp).toLocaleString() : 'N/A';
+    
+    const status = order.Status || 'pending';
+    
+    tr.innerHTML = `
+      <td>${timestamp}</td>
+      <td><strong>${order.Name || 'N/A'}</strong></td>
+      <td>${order.Phone || 'N/A'}</td>
+      <td>${order.Table || 'N/A'}</td>
+      <td title="${itemsText}">${itemsText.substring(0, 30)}${itemsText.length > 30 ? '...' : ''}</td>
+      <td><strong>₹${parseFloat(order.Total || 0).toFixed(2)}</strong></td>
+      <td>
+        <span class="status-badge status-${status}">${status}</span>
+      </td>
+      <td>
+        <button class="complete-btn" onclick="completeOrder('${order.Timestamp}')">
+          ✅ Complete
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+  
+  table.style.display = 'table';
+  hideLoading('ordersLoading');
+}
+
+// ✅ Update Menu Table
+function updateMenuTable(menu) {
+  const tbody = document.getElementById("menuTableBody");
+  const table = document.getElementById("menuTable");
+  
+  if (!menu || menu.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#666;">No menu items found</td></tr>';
+    table.style.display = 'table';
+    hideLoading('menuLoading');
+    return;
+  }
+  
+  tbody.innerHTML = '';
+  
+  menu.forEach(item => {
+    const tr = document.createElement("tr");
+    const imageUrl = item.Image || item.image || 'https://via.placeholder.com/50x50?text=No+Image';
+    
+    tr.innerHTML = `
+      <td><strong>${item.Name || item.name}</strong></td>
+      <td>₹${parseFloat(item.Price || item.price).toFixed(2)}</td>
+      <td>${item.Category || item.category}</td>
+      <td>${(item.Type || item.type) === 'non-veg' ? '🔴' : '🟢'}</td>
+      <td>
+        <img src="${imageUrl}" alt="${item.Name || item.name}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px;">
+      </td>
+      <td>
+        <button class="delete-btn" onclick="deleteMenuItem('${item.Name || item.name}')">
+          🗑️ Delete
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+  
+  table.style.display = 'table';
+  hideLoading('menuLoading');
+}
+
+// ✅ Add Menu Item
+async function addMenuItem(event) {
+  event.preventDefault();
+  
+  const name = document.getElementById("itemName").value.trim();
+  const price = document.getElementById("itemPrice").value;
+  const category = document.getElementById("itemCategory").value.trim();
+  const description = document.getElementById("itemDescription").value.trim();
+  const type = document.getElementById("itemType").value;
+  const imageFile = document.getElementById("itemImage").files[0];
+  
+  if (!name || !price || !category) {
+    alert("Please fill all required fields");
+    return false;
+  }
+  
+  try {
+    // For now, we'll use a placeholder image
+    // In production, you'd upload the image first
+    const imageUrl = "https://via.placeholder.com/300x200/ff6b6b/white?text=" + encodeURIComponent(name);
+    
+    const response = await fetch(`${scriptURL}?action=addProduct&name=${encodeURIComponent(name)}&price=${price}&category=${encodeURIComponent(category)}&description=${encodeURIComponent(description)}&type=${type}&image=${encodeURIComponent(imageUrl)}`);
+    const result = await response.json();
+    
+    if (result.status === 'success') {
+      alert('✅ Item added successfully!');
+      // Clear form
+      event.target.reset();
+      document.getElementById('imagePreview').innerHTML = '<span>Image Preview</span>';
+      // Reload menu
+      loadDashboard();
+    } else {
+      alert('❌ Failed to add item: ' + (result.error || 'Unknown error'));
+    }
+  } catch (error) {
+    console.error('Add item error:', error);
+    alert('❌ Network error adding item');
+  }
+  
+  return false;
+}
+
+// ✅ Delete Menu Item
+async function deleteMenuItem(itemName) {
+  if (!confirm(`Are you sure you want to delete "${itemName}"?`)) {
+    return;
+  }
+  
+  try {
+    const response = await fetch(`${scriptURL}?action=deleteProduct&name=${encodeURIComponent(itemName)}`);
+    const result = await response.json();
+    
+    if (result.status === 'success') {
+      alert('✅ Item deleted successfully!');
+      loadDashboard();
+    } else {
+      alert('❌ Failed to delete item: ' + (result.error || 'Unknown error'));
+    }
+  } catch (error) {
+    console.error('Delete item error:', error);
+    alert('❌ Network error deleting item');
+  }
+}
+
+// ✅ Complete Order
+async function completeOrder(orderId) {
+  if (confirm('Mark this order as completed?')) {
+    // Here you would typically update the order status in your sheet
+    alert('Order marked as completed!');
+    loadDashboard();
+  }
+}
+
+// ✅ Image Preview
+function previewImage(input) {
+  const preview = document.getElementById('imagePreview');
+  
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+      preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+    };
+    
+    reader.readAsDataURL(input.files[0]);
+  } else {
+    preview.innerHTML = '<span>Image Preview</span>';
+  }
+}
+
+// ✅ Utility Functions
+function showLoading(elementId, message = 'Loading...') {
+  const element = document.getElementById(elementId);
+  if (element) {
+    element.innerHTML = message;
+    element.style.display = 'block';
+  }
+}
+
+function hideLoading(elementId) {
+  const element = document.getElementById(elementId);
+  if (element) {
+    element.style.display = 'none';
+  }
+}
+
+function showError(elementId, message) {
+  const element = document.getElementById(elementId);
+  if (element) {
+    element.innerHTML = `<div class="error">${message}</div>`;
+    element.style.display = 'block';
   }
 }
 
 // ✅ Run on page load
 document.addEventListener("DOMContentLoaded", loadDashboard);
+
+// ✅ Auto-refresh every 30 seconds
+setInterval(loadDashboard, 30000);
