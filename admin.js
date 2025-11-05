@@ -8,40 +8,58 @@ async function loadDashboard() {
     showLoading('ordersLoading', 'Loading orders...');
     showLoading('menuLoading', 'Loading menu...');
     
+    console.log("🔄 Loading dashboard data...");
+    
     // Load all data simultaneously
     const [statsResponse, salesResponse, productsResponse, ordersResponse, menuResponse] = await Promise.all([
-      fetch(`${scriptURL}?action=getDashboardStats`),
-      fetch(`${scriptURL}?action=getSalesData`),
-      fetch(`${scriptURL}?action=getTopProducts`),
-      fetch(`${scriptURL}?action=getOrders`),
-      fetch(`${scriptURL}?action=getMenu`)
+      fetch(`${scriptURL}?action=getDashboardStats`).catch(handleFetchError),
+      fetch(`${scriptURL}?action=getSalesData`).catch(handleFetchError),
+      fetch(`${scriptURL}?action=getTopProducts`).catch(handleFetchError),
+      fetch(`${scriptURL}?action=getOrders`).catch(handleFetchError),
+      fetch(`${scriptURL}?action=getMenu`).catch(handleFetchError)
     ]);
     
-    const stats = await statsResponse.json();
-    const salesData = await salesResponse.json();
-    const topProducts = await productsResponse.json();
-    const ordersData = await ordersResponse.json();
-    const menuData = await menuResponse.json();
+    // Check if responses are valid
+    if (!statsResponse || !salesResponse || !productsResponse || !ordersResponse || !menuResponse) {
+      throw new Error('Some API requests failed');
+    }
     
-    if (stats.status === 'success') {
+    const stats = await statsResponse.json().catch(handleJsonError);
+    const salesData = await salesResponse.json().catch(handleJsonError);
+    const topProducts = await productsResponse.json().catch(handleJsonError);
+    const ordersData = await ordersResponse.json().catch(handleJsonError);
+    const menuData = await menuResponse.json().catch(handleJsonError);
+    
+    console.log("📊 API Responses:", { stats, salesData, topProducts, ordersData, menuData });
+    
+    // Update dashboard with proper error handling
+    if (stats && stats.status === 'success') {
       updateAnalytics(stats);
+    } else {
+      console.error('Stats data error:', stats);
     }
     
-    if (salesData.status === 'success') {
+    if (salesData && salesData.status === 'success' && Array.isArray(salesData)) {
       updateSalesChart(salesData);
+    } else {
+      console.error('Sales data error or not array:', salesData);
+      updateSalesChart([]); // Pass empty array
     }
     
-    if (topProducts.status === 'success') {
+    if (topProducts && topProducts.status === 'success' && Array.isArray(topProducts)) {
       updateProductsChart(topProducts);
+    } else {
+      console.error('Products data error or not array:', topProducts);
+      updateProductsChart([]); // Pass empty array
     }
     
-    if (ordersData.status === 'success') {
+    if (ordersData && ordersData.status === 'success') {
       updateOrdersTable(ordersData.orders);
     } else {
       showError('ordersLoading', 'Failed to load orders');
     }
     
-    if (menuData.status === 'success') {
+    if (menuData && menuData.status === 'success') {
       updateMenuTable(menuData.menu);
     } else {
       showError('menuLoading', 'Failed to load menu');
@@ -49,33 +67,56 @@ async function loadDashboard() {
     
   } catch (err) {
     console.error("❌ Load Error:", err);
-    showError('ordersLoading', 'Network error loading data');
-    showError('menuLoading', 'Network error loading data');
+    showError('ordersLoading', 'Network error loading data: ' + err.message);
+    showError('menuLoading', 'Network error loading data: ' + err.message);
+    
+    // Initialize charts with empty data
+    updateSalesChart([]);
+    updateProductsChart([]);
   }
 }
 
 // ✅ Update Analytics Cards
 function updateAnalytics(stats) {
-  document.getElementById("totalOrders").textContent = stats.totalOrders;
-  document.getElementById("totalSales").textContent = `₹${stats.totalSales}`;
-  document.getElementById("todayOrders").textContent = stats.todayOrders;
-  document.getElementById("pendingOrders").textContent = stats.pendingOrders;
+  if (!stats) return;
+  
+  document.getElementById("totalOrders").textContent = stats.totalOrders || 0;
+  document.getElementById("totalSales").textContent = `₹${stats.totalSales || 0}`;
+  document.getElementById("todayOrders").textContent = stats.todayOrders || 0;
+  document.getElementById("pendingOrders").textContent = stats.pendingOrders || 0;
 }
 
-// ✅ Update Sales Chart
+// ✅ Update Sales Chart with proper error handling
 function updateSalesChart(salesData) {
-  const ctx = document.getElementById('salesChart').getContext('2d');
+  const ctx = document.getElementById('salesChart');
+  if (!ctx) return;
+  
+  // Ensure salesData is an array
+  if (!Array.isArray(salesData)) {
+    console.error('Sales data is not an array:', salesData);
+    salesData = [];
+  }
   
   if (salesChart) {
     salesChart.destroy();
   }
   
   const labels = salesData.map(item => {
-    const date = new Date(item.date);
-    return date.toLocaleDateString('en-US', { weekday: 'short' });
+    try {
+      const date = new Date(item.date);
+      return date.toLocaleDateString('en-US', { weekday: 'short' });
+    } catch (e) {
+      return 'Invalid Date';
+    }
   });
   
-  const data = salesData.map(item => item.sales);
+  const data = salesData.map(item => item.sales || 0);
+  
+  // If no data, show placeholder
+  if (salesData.length === 0) {
+    labels.push('No Data');
+    data.push(0);
+  }
   
   salesChart = new Chart(ctx, {
     type: 'line',
@@ -112,16 +153,33 @@ function updateSalesChart(salesData) {
   });
 }
 
-// ✅ Update Products Chart
+// ✅ Update Products Chart with proper error handling
 function updateProductsChart(productsData) {
-  const ctx = document.getElementById('productsChart').getContext('2d');
+  const ctx = document.getElementById('productsChart');
+  if (!ctx) return;
+  
+  // Ensure productsData is an array
+  if (!Array.isArray(productsData)) {
+    console.error('Products data is not an array:', productsData);
+    productsData = [];
+  }
   
   if (productsChart) {
     productsChart.destroy();
   }
   
-  const labels = productsData.map(item => item.name);
-  const data = productsData.map(item => item.count);
+  const labels = productsData.map(item => {
+    const name = item.name || 'Unknown';
+    return name.length > 15 ? name.substring(0, 15) + '...' : name;
+  });
+  
+  const data = productsData.map(item => item.count || 0);
+  
+  // If no data, show placeholder
+  if (productsData.length === 0) {
+    labels.push('No Products');
+    data.push(0);
+  }
   
   productsChart = new Chart(ctx, {
     type: 'bar',
@@ -158,9 +216,9 @@ function updateOrdersTable(orders) {
   const tbody = document.getElementById("ordersTableBody");
   const table = document.getElementById("ordersTable");
   
-  if (!orders || orders.length === 0) {
+  if (!orders || !Array.isArray(orders) || orders.length === 0) {
     tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#666;">No orders found</td></tr>';
-    table.style.display = 'table';
+    if (table) table.style.display = 'table';
     hideLoading('ordersLoading');
     return;
   }
@@ -206,7 +264,7 @@ function updateOrdersTable(orders) {
     tbody.appendChild(tr);
   });
   
-  table.style.display = 'table';
+  if (table) table.style.display = 'table';
   hideLoading('ordersLoading');
 }
 
@@ -215,9 +273,9 @@ function updateMenuTable(menu) {
   const tbody = document.getElementById("menuTableBody");
   const table = document.getElementById("menuTable");
   
-  if (!menu || menu.length === 0) {
+  if (!menu || !Array.isArray(menu) || menu.length === 0) {
     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#666;">No menu items found</td></tr>';
-    table.style.display = 'table';
+    if (table) table.style.display = 'table';
     hideLoading('menuLoading');
     return;
   }
@@ -245,8 +303,19 @@ function updateMenuTable(menu) {
     tbody.appendChild(tr);
   });
   
-  table.style.display = 'table';
+  if (table) table.style.display = 'table';
   hideLoading('menuLoading');
+}
+
+// ✅ Error handling functions
+function handleFetchError(error) {
+  console.error('Fetch error:', error);
+  return null;
+}
+
+function handleJsonError(error) {
+  console.error('JSON parse error:', error);
+  return null;
 }
 
 // ✅ Add Menu Item
@@ -258,7 +327,6 @@ async function addMenuItem(event) {
   const category = document.getElementById("itemCategory").value.trim();
   const description = document.getElementById("itemDescription").value.trim();
   const type = document.getElementById("itemType").value;
-  const imageFile = document.getElementById("itemImage").files[0];
   
   if (!name || !price || !category) {
     alert("Please fill all required fields");
@@ -266,26 +334,27 @@ async function addMenuItem(event) {
   }
   
   try {
-    // For now, we'll use a placeholder image
-    // In production, you'd upload the image first
     const imageUrl = "https://via.placeholder.com/300x200/ff6b6b/white?text=" + encodeURIComponent(name);
     
     const response = await fetch(`${scriptURL}?action=addProduct&name=${encodeURIComponent(name)}&price=${price}&category=${encodeURIComponent(category)}&description=${encodeURIComponent(description)}&type=${type}&image=${encodeURIComponent(imageUrl)}`);
+    
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    
     const result = await response.json();
     
     if (result.status === 'success') {
       alert('✅ Item added successfully!');
-      // Clear form
       event.target.reset();
       document.getElementById('imagePreview').innerHTML = '<span>Image Preview</span>';
-      // Reload menu
       loadDashboard();
     } else {
       alert('❌ Failed to add item: ' + (result.error || 'Unknown error'));
     }
   } catch (error) {
     console.error('Add item error:', error);
-    alert('❌ Network error adding item');
+    alert('❌ Network error adding item: ' + error.message);
   }
   
   return false;
@@ -299,6 +368,11 @@ async function deleteMenuItem(itemName) {
   
   try {
     const response = await fetch(`${scriptURL}?action=deleteProduct&name=${encodeURIComponent(itemName)}`);
+    
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    
     const result = await response.json();
     
     if (result.status === 'success') {
@@ -309,14 +383,13 @@ async function deleteMenuItem(itemName) {
     }
   } catch (error) {
     console.error('Delete item error:', error);
-    alert('❌ Network error deleting item');
+    alert('❌ Network error deleting item: ' + error.message);
   }
 }
 
 // ✅ Complete Order
 async function completeOrder(orderId) {
   if (confirm('Mark this order as completed?')) {
-    // Here you would typically update the order status in your sheet
     alert('Order marked as completed!');
     loadDashboard();
   }
