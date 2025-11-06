@@ -1,24 +1,43 @@
-const scriptURL = "https://script.google.com/macros/s/AKfycbyxRhVV7xrOCulxgZOtIkLvMFg6qsRO6MRwibEuI_gTb6Dr8FaF2RNYDyxNvIs9n6QH/exec";
 
+// =============================================
+// ✅ FIXED: SCRIPT_URL DEFINED AT THE VERY TOP
+// =============================================
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyxRhVV7xrOCulxgZOtIkLvMFg6qsRO6MRwibEuI_gTb6Dr8FaF2RNYDyxNvIs9n6QH/exec';
 
-// Global State
+// =============================================
+// GLOBAL STATE
+// =============================================
 let currentUser = null;
 let allProducts = [];
 let allOrders = [];
 let salesChart = null;
 let productsChart = null;
 
-// Initialize Application
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Admin Panel Initialized - SCRIPT_URL:', SCRIPT_URL);
+// =============================================
+// INITIALIZATION - SAFE DOM READY
+// =============================================
+function initializeAdminPanel() {
+    console.log('🚀 Admin Panel Initializing...');
+    console.log('✅ SCRIPT_URL is defined:', typeof SCRIPT_URL !== 'undefined');
+    console.log('🔗 SCRIPT_URL value:', SCRIPT_URL);
+    
     checkAuthentication();
     initializeCharts();
     setupEventListeners();
     updateCurrentTime();
     setInterval(updateCurrentTime, 60000);
-});
+}
 
-// Authentication Functions
+// Wait for DOM to be fully loaded
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeAdminPanel);
+} else {
+    initializeAdminPanel();
+}
+
+// =============================================
+// AUTHENTICATION FUNCTIONS
+// =============================================
 function checkAuthentication() {
     const savedUser = localStorage.getItem('adminUser');
     if (savedUser) {
@@ -26,6 +45,7 @@ function checkAuthentication() {
             currentUser = JSON.parse(savedUser);
             showDashboard();
         } catch (e) {
+            console.error('❌ Error parsing saved user:', e);
             localStorage.removeItem('adminUser');
             showLogin();
         }
@@ -58,12 +78,20 @@ function logout() {
     showAlert('Logged out successfully', 'success');
 }
 
-// Login Handler
+// =============================================
+// LOGIN HANDLER - COMPLETELY FIXED
+// =============================================
 async function handleLogin(e) {
     e.preventDefault();
     
+    console.log('🔐 Login button clicked');
+    console.log('✅ SCRIPT_URL available:', SCRIPT_URL);
+    
     const loginForm = document.getElementById('loginForm');
-    if (!loginForm) return;
+    if (!loginForm) {
+        console.error('❌ Login form not found');
+        return;
+    }
     
     const formData = new FormData(loginForm);
     const credentials = {
@@ -72,7 +100,6 @@ async function handleLogin(e) {
     };
 
     console.log('🔐 Attempting login with:', credentials);
-    console.log('📡 Using SCRIPT_URL:', SCRIPT_URL);
 
     const loginBtn = loginForm.querySelector('button');
     if (loginBtn) {
@@ -81,6 +108,8 @@ async function handleLogin(e) {
     }
 
     try {
+        console.log('📡 Sending request to:', SCRIPT_URL);
+        
         const response = await fetch(SCRIPT_URL, {
             method: 'POST',
             headers: {
@@ -92,12 +121,14 @@ async function handleLogin(e) {
             })
         });
 
+        console.log('📨 Received response, status:', response.status);
+
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         const data = await response.json();
-        console.log('📨 Login response:', data);
+        console.log('📄 Response data:', data);
 
         if (data.success) {
             localStorage.setItem('adminUser', JSON.stringify(data.user));
@@ -118,14 +149,15 @@ async function handleLogin(e) {
     }
 }
 
-// Dashboard Data Loading
+// =============================================
+// DASHBOARD DATA LOADING
+// =============================================
 async function loadDashboardData() {
     try {
         showLoading('dashboard');
         
         console.log('📊 Loading dashboard data from:', SCRIPT_URL);
         
-        // Load all data
         const statsResponse = await fetch(SCRIPT_URL + '?action=getDashboardStats');
         const ordersResponse = await fetch(SCRIPT_URL + '?action=getOrders');
         const productsResponse = await fetch(SCRIPT_URL + '?action=getAllProducts');
@@ -140,14 +172,10 @@ async function loadDashboardData() {
 
         console.log('📈 Data loaded successfully');
 
-        // Update dashboard stats
         updateDashboardStats(stats);
-        
-        // Update global state
         allOrders = ordersData.orders || [];
         allProducts = productsData.products || [];
         
-        // Render data
         renderOrdersTable(allOrders);
         renderProductsTable(allProducts);
         updateCharts(salesData, topProducts);
@@ -162,20 +190,20 @@ async function loadDashboardData() {
 }
 
 function updateDashboardStats(stats) {
-    const elements = {
-        'totalOrders': stats.totalOrders || 0,
-        'totalSales': '₹' + (stats.totalSales || 0),
-        'todayOrders': stats.todayOrders || 0,
-        'pendingOrders': stats.pendingOrders || 0
-    };
-
-    Object.keys(elements).forEach(id => {
-        const element = document.getElementById(id);
-        if (element) element.textContent = elements[id];
-    });
+    const totalOrdersEl = document.getElementById('totalOrders');
+    const totalSalesEl = document.getElementById('totalSales');
+    const todayOrdersEl = document.getElementById('todayOrders');
+    const pendingOrdersEl = document.getElementById('pendingOrders');
+    
+    if (totalOrdersEl) totalOrdersEl.textContent = stats.totalOrders || 0;
+    if (totalSalesEl) totalSalesEl.textContent = '₹' + (stats.totalSales || 0);
+    if (todayOrdersEl) todayOrdersEl.textContent = stats.todayOrders || 0;
+    if (pendingOrdersEl) pendingOrdersEl.textContent = stats.pendingOrders || 0;
 }
 
-// Orders Management
+// =============================================
+// ORDERS MANAGEMENT
+// =============================================
 function renderOrdersTable(orders) {
     const tbody = document.getElementById('ordersTableBody');
     const ordersTable = document.getElementById('ordersTable');
@@ -253,7 +281,9 @@ function calculateOrderTotal(items) {
     return items.reduce((total, item) => total + (item.price * item.quantity), 0);
 }
 
-// Products Management
+// =============================================
+// PRODUCTS MANAGEMENT
+// =============================================
 function renderProductsTable(products) {
     const tbody = document.getElementById('menuTableBody');
     const menuTable = document.getElementById('menuTable');
@@ -311,7 +341,9 @@ function renderProductsTable(products) {
     menuTable.style.display = 'table';
 }
 
-// Add Product Function
+// =============================================
+// PRODUCT OPERATIONS
+// =============================================
 async function addMenuItem(e) {
     e.preventDefault();
     
@@ -365,7 +397,6 @@ async function addMenuItem(e) {
     }
 }
 
-// Edit Product Function
 function editProduct(productName) {
     const product = allProducts.find(p => p.name === productName);
     if (!product) {
@@ -430,7 +461,6 @@ async function updateProduct(e) {
     }
 }
 
-// Delete Product Function
 async function deleteProduct(productName) {
     if (!confirm(`Are you sure you want to delete "${productName}"? This action cannot be undone.`)) {
         return;
@@ -452,7 +482,9 @@ async function deleteProduct(productName) {
     }
 }
 
-// Order Status Management
+// =============================================
+// ORDER OPERATIONS
+// =============================================
 async function updateOrderStatus(orderId, status) {
     try {
         const response = await fetch(SCRIPT_URL + `?action=updateOrderStatus&orderId=${encodeURIComponent(orderId)}&status=${status}`);
@@ -469,7 +501,6 @@ async function updateOrderStatus(orderId, status) {
     }
 }
 
-// Bill Generation
 async function generateBill(orderId) {
     try {
         const response = await fetch(SCRIPT_URL + `?action=generateBill&orderId=${encodeURIComponent(orderId)}`);
@@ -561,7 +592,9 @@ function closeBillModal() {
     closeModal('billModal');
 }
 
-// Image Preview Function
+// =============================================
+// IMAGE PREVIEW FUNCTIONS
+// =============================================
 function previewImage(input) {
     const preview = document.getElementById('imagePreview');
     if (!preview) return;
@@ -601,7 +634,9 @@ function resetImagePreview() {
     }
 }
 
-// Chart Functions
+// =============================================
+// CHART FUNCTIONS
+// =============================================
 function initializeCharts() {
     const salesCanvas = document.getElementById('salesChart');
     const productsCanvas = document.getElementById('productsChart');
@@ -704,7 +739,9 @@ function updateCharts(salesData, topProducts) {
     }
 }
 
-// Utility Functions
+// =============================================
+// UTILITY FUNCTIONS
+// =============================================
 function setupEventListeners() {
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
@@ -786,13 +823,17 @@ function updateCurrentTime() {
     }
 }
 
-// Global refresh function
+// =============================================
+// GLOBAL FUNCTIONS
+// =============================================
 function loadDashboard() {
     loadDashboardData();
     showAlert('Dashboard refreshed!', 'success');
 }
 
-// Make functions globally available
+// =============================================
+// GLOBAL FUNCTION EXPORTS
+// =============================================
 window.handleLogin = handleLogin;
 window.addMenuItem = addMenuItem;
 window.updateProduct = updateProduct;
