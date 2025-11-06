@@ -1,4 +1,4 @@
-const SHEET_URL = "https://script.google.com/macros/s/AKfycbyxRhVV7xrOCulxgZOtIkLvMFg6qsRO6MRwibEuI_gTb6Dr8FaF2RNYDyxNvIs9n6QH/exec";
+const SHEET_URL = "https://script.google.com/macros/s/AKfycby9O_HhQ58nb7Gb-4XyWx12nU4tCeKFUw16EHVKO5FiCg2A47JGfuXiblhnmkTOqSoc/exec";
 const MENU_CACHE_KEY = "gd_menu_cache_v1";
 const CART_CACHE_KEY = "gd_cart_cache_v1";
 const MENU_CACHE_TS = "gd_menu_cache_ts";
@@ -455,3 +455,4 @@ document.addEventListener("DOMContentLoaded", () => {
   
   loadMenu().catch(err => console.error("Menu load failed", err));
 });
+
