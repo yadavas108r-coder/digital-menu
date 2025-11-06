@@ -1,4 +1,4 @@
-const scriptURL = "https://script.google.com/macros/s/AKfycbyYXyDhUbqdhau8XeDdKbKzvsyNJEJ0gL7h2ucTgjZ_cJrxdG6ZkAp-f0ecL7yWDdw/exec";
+const scriptURL = "https://script.google.com/macros/s/AKfycbyxRhVV7xrOCulxgZOtIkLvMFg6qsRO6MRwibEuI_gTb6Dr8FaF2RNYDyxNvIs9n6QH/exec";
 
 // Global State
 let currentUser = null;
