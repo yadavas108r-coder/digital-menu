@@ -1,5 +1,6 @@
 const scriptURL = "https://script.google.com/macros/s/AKfycbyxRhVV7xrOCulxgZOtIkLvMFg6qsRO6MRwibEuI_gTb6Dr8FaF2RNYDyxNvIs9n6QH/exec";
 
+
 // Global State
 let currentUser = null;
 let allProducts = [];
@@ -15,6 +16,7 @@ const loginAlert = document.getElementById('loginAlert');
 
 // Initialize Application
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Admin Panel Initialized');
     checkAuthentication();
     initializeCharts();
     setupEventListeners();
@@ -34,13 +36,13 @@ function checkAuthentication() {
 }
 
 function showLogin() {
-    loginSection.style.display = 'flex';
-    dashboardSection.style.display = 'none';
+    if (loginSection) loginSection.style.display = 'flex';
+    if (dashboardSection) dashboardSection.style.display = 'none';
 }
 
 function showDashboard() {
-    loginSection.style.display = 'none';
-    dashboardSection.style.display = 'block';
+    if (loginSection) loginSection.style.display = 'none';
+    if (dashboardSection) dashboardSection.style.display = 'block';
     loadDashboardData();
 }
 
@@ -55,6 +57,8 @@ function logout() {
 async function handleLogin(e) {
     e.preventDefault();
     
+    if (!loginForm) return;
+    
     const formData = new FormData(loginForm);
     const credentials = {
         username: formData.get('username'),
@@ -62,10 +66,14 @@ async function handleLogin(e) {
     };
 
     const loginBtn = loginForm.querySelector('button');
-    loginBtn.disabled = true;
-    loginBtn.textContent = 'Logging in...';
+    if (loginBtn) {
+        loginBtn.disabled = true;
+        loginBtn.textContent = 'Logging in...';
+    }
 
     try {
+        console.log('🔐 Attempting login...');
+        
         const response = await fetch(SCRIPT_URL, {
             method: 'POST',
             headers: {
@@ -78,6 +86,7 @@ async function handleLogin(e) {
         });
 
         const data = await response.json();
+        console.log('📨 Login response:', data);
 
         if (data.success) {
             localStorage.setItem('adminUser', JSON.stringify(data.user));
@@ -88,10 +97,13 @@ async function handleLogin(e) {
             showAlert(data.error || 'Invalid username or password', 'error', loginAlert);
         }
     } catch (error) {
+        console.error('❌ Login error:', error);
         showAlert('Network error: ' + error.message, 'error', loginAlert);
     } finally {
-        loginBtn.disabled = false;
-        loginBtn.textContent = 'Login';
+        if (loginBtn) {
+            loginBtn.disabled = false;
+            loginBtn.textContent = 'Login to Dashboard';
+        }
     }
 }
 
@@ -99,6 +111,8 @@ async function handleLogin(e) {
 async function loadDashboardData() {
     try {
         showLoading('dashboard');
+        
+        console.log('📊 Loading dashboard data...');
         
         // Load all data in parallel
         const [statsResponse, ordersResponse, productsResponse, salesResponse, topProductsResponse] = await Promise.all([
@@ -115,6 +129,8 @@ async function loadDashboardData() {
         const salesData = await salesResponse.json();
         const topProducts = await topProductsResponse.json();
 
+        console.log('📈 Data loaded:', { stats, orders: ordersData.orders?.length, products: productsData.products?.length });
+
         // Update dashboard stats
         updateDashboardStats(stats);
         
@@ -130,26 +146,36 @@ async function loadDashboardData() {
         hideLoading('dashboard');
         
     } catch (error) {
-        console.error('Dashboard load error:', error);
-        showAlert('Failed to load dashboard data', 'error');
+        console.error('❌ Dashboard load error:', error);
+        showAlert('Failed to load dashboard data: ' + error.message, 'error');
         hideLoading('dashboard');
     }
 }
 
 function updateDashboardStats(stats) {
-    document.getElementById('totalOrders').textContent = stats.totalOrders || 0;
-    document.getElementById('totalSales').textContent = '₹' + (stats.totalSales || 0);
-    document.getElementById('todayOrders').textContent = stats.todayOrders || 0;
-    document.getElementById('pendingOrders').textContent = stats.pendingOrders || 0;
+    const totalOrdersEl = document.getElementById('totalOrders');
+    const totalSalesEl = document.getElementById('totalSales');
+    const todayOrdersEl = document.getElementById('todayOrders');
+    const pendingOrdersEl = document.getElementById('pendingOrders');
+    
+    if (totalOrdersEl) totalOrdersEl.textContent = stats.totalOrders || 0;
+    if (totalSalesEl) totalSalesEl.textContent = '₹' + (stats.totalSales || 0);
+    if (todayOrdersEl) todayOrdersEl.textContent = stats.todayOrders || 0;
+    if (pendingOrdersEl) pendingOrdersEl.textContent = stats.pendingOrders || 0;
 }
 
 // Orders Management
 function renderOrdersTable(orders) {
     const tbody = document.getElementById('ordersTableBody');
+    const ordersTable = document.getElementById('ordersTable');
+    const ordersLoading = document.getElementById('ordersLoading');
+    
+    if (!tbody || !ordersTable || !ordersLoading) return;
     
     if (!orders || orders.length === 0) {
-        document.getElementById('ordersTable').style.display = 'none';
-        document.getElementById('ordersLoading').innerHTML = '<p>No orders found</p>';
+        ordersTable.style.display = 'none';
+        ordersLoading.innerHTML = '<p>No orders found</p>';
+        ordersLoading.style.display = 'block';
         return;
     }
 
@@ -196,8 +222,8 @@ function renderOrdersTable(orders) {
     }).join('');
 
     tbody.innerHTML = ordersHtml;
-    document.getElementById('ordersLoading').style.display = 'none';
-    document.getElementById('ordersTable').style.display = 'table';
+    ordersLoading.style.display = 'none';
+    ordersTable.style.display = 'table';
 }
 
 function parseOrderItems(itemsJson) {
@@ -219,10 +245,15 @@ function calculateOrderTotal(items) {
 // Products Management
 function renderProductsTable(products) {
     const tbody = document.getElementById('menuTableBody');
+    const menuTable = document.getElementById('menuTable');
+    const menuLoading = document.getElementById('menuLoading');
+    
+    if (!tbody || !menuTable || !menuLoading) return;
     
     if (!products || products.length === 0) {
-        document.getElementById('menuTable').style.display = 'none';
-        document.getElementById('menuLoading').innerHTML = '<p>No products found</p>';
+        menuTable.style.display = 'none';
+        menuLoading.innerHTML = '<p>No products found</p>';
+        menuLoading.style.display = 'block';
         return;
     }
 
@@ -265,8 +296,8 @@ function renderProductsTable(products) {
     `).join('');
 
     tbody.innerHTML = productsHtml;
-    document.getElementById('menuLoading').style.display = 'none';
-    document.getElementById('menuTable').style.display = 'table';
+    menuLoading.style.display = 'none';
+    menuTable.style.display = 'table';
 }
 
 // Add Product Function
@@ -282,14 +313,18 @@ async function addMenuItem(e) {
         category: formData.get('itemCategory'),
         type: formData.get('itemType'),
         description: formData.get('itemDescription'),
-        image: document.getElementById('imagePreview').querySelector('img')?.src || ''
+        image: document.getElementById('imagePreview')?.querySelector('img')?.src || ''
     };
 
     const submitBtn = form.querySelector('button');
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Adding...';
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Adding...';
+    }
 
     try {
+        console.log('➕ Adding product:', productData);
+        
         const response = await fetch(SCRIPT_URL, {
             method: 'POST',
             headers: {
@@ -302,6 +337,7 @@ async function addMenuItem(e) {
         });
 
         const data = await response.json();
+        console.log('📨 Add product response:', data);
 
         if (data.success) {
             showAlert('Product added successfully!', 'success');
@@ -312,10 +348,13 @@ async function addMenuItem(e) {
             showAlert(data.error || 'Failed to add product', 'error');
         }
     } catch (error) {
+        console.error('❌ Add product error:', error);
         showAlert('Network error: ' + error.message, 'error');
     } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = '➕ Add Item';
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '➕ Add Item';
+        }
     }
 }
 
@@ -327,15 +366,23 @@ function editProduct(productName) {
         return;
     }
 
-    // Populate edit form (you'll need to create an edit modal)
-    document.getElementById('editItemName').value = product.name;
-    document.getElementById('editItemPrice').value = product.price;
-    document.getElementById('editItemCategory').value = product.category;
-    document.getElementById('editItemType').value = product.type;
-    document.getElementById('editItemDescription').value = product.description || '';
+    // Populate edit form
+    const editName = document.getElementById('editItemName');
+    const editPrice = document.getElementById('editItemPrice');
+    const editCategory = document.getElementById('editItemCategory');
+    const editType = document.getElementById('editItemType');
+    const editDescription = document.getElementById('editItemDescription');
+    const editOldName = document.getElementById('editItemOldName');
+    
+    if (editName) editName.value = product.name;
+    if (editPrice) editPrice.value = product.price;
+    if (editCategory) editCategory.value = product.category;
+    if (editType) editType.value = product.type;
+    if (editDescription) editDescription.value = product.description || '';
+    if (editOldName) editOldName.value = product.name;
     
     const editImagePreview = document.getElementById('editImagePreview');
-    if (product.image) {
+    if (editImagePreview && product.image) {
         editImagePreview.innerHTML = `<img src="${product.image}" alt="Preview">`;
     }
     
@@ -347,17 +394,26 @@ async function updateProduct(e) {
     e.preventDefault();
     
     const formData = new FormData(e.target);
+    const oldName = document.getElementById('editItemOldName')?.value;
+    
+    if (!oldName) {
+        showAlert('Product name not found', 'error');
+        return;
+    }
+    
     const productData = {
-        oldName: document.getElementById('editItemName').value,
+        oldName: oldName,
         name: formData.get('itemName'),
         price: parseFloat(formData.get('itemPrice')),
         category: formData.get('itemCategory'),
         type: formData.get('itemType'),
         description: formData.get('itemDescription'),
-        image: document.getElementById('editImagePreview').querySelector('img')?.src || ''
+        image: document.getElementById('editImagePreview')?.querySelector('img')?.src || ''
     };
 
     try {
+        console.log('✏️ Updating product:', productData);
+        
         const response = await fetch(SCRIPT_URL, {
             method: 'POST',
             headers: {
@@ -379,6 +435,7 @@ async function updateProduct(e) {
             showAlert(data.error || 'Failed to update product', 'error');
         }
     } catch (error) {
+        console.error('❌ Update product error:', error);
         showAlert('Network error: ' + error.message, 'error');
     }
 }
@@ -390,16 +447,20 @@ async function deleteProduct(productName) {
     }
 
     try {
+        console.log('🗑️ Deleting product:', productName);
+        
         const response = await fetch(SCRIPT_URL + '?action=deleteProduct&name=' + encodeURIComponent(productName));
         const data = await response.json();
 
         if (data.success) {
             showAlert('Product deleted successfully!', 'success');
+            closeModal('editProductModal');
             loadDashboardData();
         } else {
             showAlert(data.error || 'Failed to delete product', 'error');
         }
     } catch (error) {
+        console.error('❌ Delete product error:', error);
         showAlert('Network error: ' + error.message, 'error');
     }
 }
@@ -407,6 +468,8 @@ async function deleteProduct(productName) {
 // Order Status Management
 async function updateOrderStatus(orderId, status) {
     try {
+        console.log('🔄 Updating order status:', { orderId, status });
+        
         const response = await fetch(SCRIPT_URL + `?action=updateOrderStatus&orderId=${encodeURIComponent(orderId)}&status=${status}`);
         const data = await response.json();
 
@@ -417,6 +480,7 @@ async function updateOrderStatus(orderId, status) {
             showAlert(data.error || 'Failed to update order status', 'error');
         }
     } catch (error) {
+        console.error('❌ Update order status error:', error);
         showAlert('Network error: ' + error.message, 'error');
     }
 }
@@ -424,6 +488,8 @@ async function updateOrderStatus(orderId, status) {
 // Bill Generation
 async function generateBill(orderId) {
     try {
+        console.log('🧾 Generating bill for order:', orderId);
+        
         const response = await fetch(SCRIPT_URL + `?action=generateBill&orderId=${encodeURIComponent(orderId)}`);
         const data = await response.json();
 
@@ -434,12 +500,15 @@ async function generateBill(orderId) {
             showAlert(data.error || 'Failed to generate bill', 'error');
         }
     } catch (error) {
+        console.error('❌ Generate bill error:', error);
         showAlert('Network error: ' + error.message, 'error');
     }
 }
 
 function renderBill(bill) {
     const billContent = document.getElementById('billContent');
+    if (!billContent) return;
+    
     const items = bill.items || [];
     const total = bill.totalAmount || calculateOrderTotal(items);
     
@@ -514,6 +583,7 @@ function closeBillModal() {
 // Image Preview Function
 function previewImage(input) {
     const preview = document.getElementById('imagePreview');
+    if (!preview) return;
     
     if (input.files && input.files[0]) {
         const reader = new FileReader();
@@ -528,86 +598,109 @@ function previewImage(input) {
     }
 }
 
+function previewEditImage(input) {
+    const preview = document.getElementById('editImagePreview');
+    if (!preview) return;
+    
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+        }
+        
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
 function resetImagePreview() {
     const preview = document.getElementById('imagePreview');
-    preview.innerHTML = '<span>Image Preview</span>';
+    if (preview) {
+        preview.innerHTML = '<span>Image Preview</span>';
+    }
 }
 
 // Chart Functions
 function initializeCharts() {
-    const salesCtx = document.getElementById('salesChart').getContext('2d');
-    const productsCtx = document.getElementById('productsChart').getContext('2d');
+    const salesCanvas = document.getElementById('salesChart');
+    const productsCanvas = document.getElementById('productsChart');
     
-    salesChart = new Chart(salesCtx, {
-        type: 'line',
-        data: {
-            labels: [],
-            datasets: [{
-                label: 'Daily Sales (₹)',
-                data: [],
-                borderColor: '#ff6b6b',
-                backgroundColor: 'rgba(255, 107, 107, 0.1)',
-                tension: 0.4,
-                fill: true
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    display: false
-                }
+    if (salesCanvas) {
+        const salesCtx = salesCanvas.getContext('2d');
+        salesChart = new Chart(salesCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Daily Sales (₹)',
+                    data: [],
+                    borderColor: '#ff6b6b',
+                    backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
             },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        color: 'rgba(0,0,0,0.1)'
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
                     }
                 },
-                x: {
-                    grid: {
-                        display: false
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0,0,0,0.1)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
                     }
                 }
             }
-        }
-    });
+        });
+    }
 
-    productsChart = new Chart(productsCtx, {
-        type: 'bar',
-        data: {
-            labels: [],
-            datasets: [{
-                label: 'Orders',
-                data: [],
-                backgroundColor: '#ff8e8e',
-                borderColor: '#ff6b6b',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    display: false
-                }
+    if (productsCanvas) {
+        const productsCtx = productsCanvas.getContext('2d');
+        productsChart = new Chart(productsCtx, {
+            type: 'bar',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Orders',
+                    data: [],
+                    backgroundColor: '#ff8e8e',
+                    borderColor: '#ff6b6b',
+                    borderWidth: 1
+                }]
             },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        color: 'rgba(0,0,0,0.1)'
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
                     }
                 },
-                x: {
-                    grid: {
-                        display: false
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0,0,0,0.1)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
                     }
                 }
             }
-        }
-    });
+        });
+    }
 }
 
 function updateCharts(salesData, topProducts) {
@@ -733,6 +826,8 @@ window.generateBill = generateBill;
 window.printBill = printBill;
 window.closeBillModal = closeBillModal;
 window.previewImage = previewImage;
+window.previewEditImage = previewEditImage;
 window.loadDashboard = loadDashboard;
 window.logout = logout;
 window.editProduct = editProduct;
+window.closeModal = closeModal;
