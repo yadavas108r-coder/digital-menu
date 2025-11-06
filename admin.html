@@ -25,71 +25,6 @@
       background: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%);
     }
 
-    .login-box {
-      background: white;
-      padding: 2.5rem;
-      border-radius: 20px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-      width: 100%;
-      max-width: 400px;
-      text-align: center;
-    }
-
-    .login-box h2 {
-      margin: 0 0 1.5rem 0;
-      color: #333;
-      font-size: 1.8rem;
-    }
-
-    .form-group {
-      margin-bottom: 1.5rem;
-      text-align: left;
-    }
-
-    .form-group label {
-      display: block;
-      margin-bottom: 0.5rem;
-      font-weight: 600;
-      color: #555;
-    }
-
-    .form-group input {
-      width: 100%;
-      padding: 12px 15px;
-      border: 2px solid #e1e5e9;
-      border-radius: 10px;
-      font-size: 1rem;
-      transition: all 0.3s ease;
-    }
-
-    .form-group input:focus {
-      outline: none;
-      border-color: #ff6b6b;
-      box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
-    }
-
-    .login-btn {
-      width: 100%;
-      background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
-      color: white;
-      border: none;
-      padding: 12px;
-      border-radius: 10px;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .login-btn:hover:not(:disabled) {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(255, 107, 107, 0.3);
-    }
-
-    .login-btn:disabled {
-      opacity: 0.7;
-      cursor: not-allowed;
-    }
 
     /* Dashboard Styles */
     .dashboard-container {
@@ -679,24 +614,7 @@
   </style>
 </head>
 <body>
-  <!-- Login Section -->
-  <div id="loginSection" class="login-container">
-    <div class="login-box">
-      <h2>🔒 Admin Login</h2>
-      <div id="loginAlert"></div>
-      <form id="loginForm">
-        <div class="form-group">
-          <label for="username">Username</label>
-          <input type="text" id="username" name="username" required value="admin" placeholder="Enter your username">
-        </div>
-        <div class="form-group">
-          <label for="password">Password</label>
-          <input type="password" id="password" name="password" required value="admin123" placeholder="Enter your password">
-        </div>
-        <button type="submit" class="login-btn">Login to Dashboard</button>
-      </form>
-    </div>
-  </div>
+  
 
   <!-- Dashboard Section -->
   <div id="dashboardSection" class="dashboard-container">
