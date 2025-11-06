@@ -8,15 +8,9 @@ let allOrders = [];
 let salesChart = null;
 let productsChart = null;
 
-// DOM Elements
-const loginSection = document.getElementById('loginSection');
-const dashboardSection = document.getElementById('dashboardSection');
-const loginForm = document.getElementById('loginForm');
-const loginAlert = document.getElementById('loginAlert');
-
 // Initialize Application
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Admin Panel Initialized');
+    console.log('🚀 Admin Panel Initialized - SCRIPT_URL:', SCRIPT_URL);
     checkAuthentication();
     initializeCharts();
     setupEventListeners();
@@ -28,19 +22,30 @@ document.addEventListener('DOMContentLoaded', function() {
 function checkAuthentication() {
     const savedUser = localStorage.getItem('adminUser');
     if (savedUser) {
-        currentUser = JSON.parse(savedUser);
-        showDashboard();
+        try {
+            currentUser = JSON.parse(savedUser);
+            showDashboard();
+        } catch (e) {
+            localStorage.removeItem('adminUser');
+            showLogin();
+        }
     } else {
         showLogin();
     }
 }
 
 function showLogin() {
+    const loginSection = document.getElementById('loginSection');
+    const dashboardSection = document.getElementById('dashboardSection');
+    
     if (loginSection) loginSection.style.display = 'flex';
     if (dashboardSection) dashboardSection.style.display = 'none';
 }
 
 function showDashboard() {
+    const loginSection = document.getElementById('loginSection');
+    const dashboardSection = document.getElementById('dashboardSection');
+    
     if (loginSection) loginSection.style.display = 'none';
     if (dashboardSection) dashboardSection.style.display = 'block';
     loadDashboardData();
@@ -57,6 +62,7 @@ function logout() {
 async function handleLogin(e) {
     e.preventDefault();
     
+    const loginForm = document.getElementById('loginForm');
     if (!loginForm) return;
     
     const formData = new FormData(loginForm);
@@ -65,6 +71,9 @@ async function handleLogin(e) {
         password: formData.get('password')
     };
 
+    console.log('🔐 Attempting login with:', credentials);
+    console.log('📡 Using SCRIPT_URL:', SCRIPT_URL);
+
     const loginBtn = loginForm.querySelector('button');
     if (loginBtn) {
         loginBtn.disabled = true;
@@ -72,8 +81,6 @@ async function handleLogin(e) {
     }
 
     try {
-        console.log('🔐 Attempting login...');
-        
         const response = await fetch(SCRIPT_URL, {
             method: 'POST',
             headers: {
@@ -85,6 +92,10 @@ async function handleLogin(e) {
             })
         });
 
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
         const data = await response.json();
         console.log('📨 Login response:', data);
 
@@ -94,11 +105,11 @@ async function handleLogin(e) {
             showDashboard();
             showAlert('Login successful! Welcome back!', 'success');
         } else {
-            showAlert(data.error || 'Invalid username or password', 'error', loginAlert);
+            showAlert(data.error || 'Invalid username or password', 'error', document.getElementById('loginAlert'));
         }
     } catch (error) {
         console.error('❌ Login error:', error);
-        showAlert('Network error: ' + error.message, 'error', loginAlert);
+        showAlert('Login failed: ' + error.message, 'error', document.getElementById('loginAlert'));
     } finally {
         if (loginBtn) {
             loginBtn.disabled = false;
@@ -112,16 +123,14 @@ async function loadDashboardData() {
     try {
         showLoading('dashboard');
         
-        console.log('📊 Loading dashboard data...');
+        console.log('📊 Loading dashboard data from:', SCRIPT_URL);
         
-        // Load all data in parallel
-        const [statsResponse, ordersResponse, productsResponse, salesResponse, topProductsResponse] = await Promise.all([
-            fetch(SCRIPT_URL + '?action=getDashboardStats'),
-            fetch(SCRIPT_URL + '?action=getOrders'),
-            fetch(SCRIPT_URL + '?action=getAllProducts'),
-            fetch(SCRIPT_URL + '?action=getSalesData'),
-            fetch(SCRIPT_URL + '?action=getTopProducts')
-        ]);
+        // Load all data
+        const statsResponse = await fetch(SCRIPT_URL + '?action=getDashboardStats');
+        const ordersResponse = await fetch(SCRIPT_URL + '?action=getOrders');
+        const productsResponse = await fetch(SCRIPT_URL + '?action=getAllProducts');
+        const salesResponse = await fetch(SCRIPT_URL + '?action=getSalesData');
+        const topProductsResponse = await fetch(SCRIPT_URL + '?action=getTopProducts');
 
         const stats = await statsResponse.json();
         const ordersData = await ordersResponse.json();
@@ -129,7 +138,7 @@ async function loadDashboardData() {
         const salesData = await salesResponse.json();
         const topProducts = await topProductsResponse.json();
 
-        console.log('📈 Data loaded:', { stats, orders: ordersData.orders?.length, products: productsData.products?.length });
+        console.log('📈 Data loaded successfully');
 
         // Update dashboard stats
         updateDashboardStats(stats);
@@ -153,15 +162,17 @@ async function loadDashboardData() {
 }
 
 function updateDashboardStats(stats) {
-    const totalOrdersEl = document.getElementById('totalOrders');
-    const totalSalesEl = document.getElementById('totalSales');
-    const todayOrdersEl = document.getElementById('todayOrders');
-    const pendingOrdersEl = document.getElementById('pendingOrders');
-    
-    if (totalOrdersEl) totalOrdersEl.textContent = stats.totalOrders || 0;
-    if (totalSalesEl) totalSalesEl.textContent = '₹' + (stats.totalSales || 0);
-    if (todayOrdersEl) todayOrdersEl.textContent = stats.todayOrders || 0;
-    if (pendingOrdersEl) pendingOrdersEl.textContent = stats.pendingOrders || 0;
+    const elements = {
+        'totalOrders': stats.totalOrders || 0,
+        'totalSales': '₹' + (stats.totalSales || 0),
+        'todayOrders': stats.todayOrders || 0,
+        'pendingOrders': stats.pendingOrders || 0
+    };
+
+    Object.keys(elements).forEach(id => {
+        const element = document.getElementById(id);
+        if (element) element.textContent = elements[id];
+    });
 }
 
 // Orders Management
@@ -323,8 +334,6 @@ async function addMenuItem(e) {
     }
 
     try {
-        console.log('➕ Adding product:', productData);
-        
         const response = await fetch(SCRIPT_URL, {
             method: 'POST',
             headers: {
@@ -337,18 +346,16 @@ async function addMenuItem(e) {
         });
 
         const data = await response.json();
-        console.log('📨 Add product response:', data);
 
         if (data.success) {
             showAlert('Product added successfully!', 'success');
             form.reset();
             resetImagePreview();
-            loadDashboardData(); // Reload to show new product
+            loadDashboardData();
         } else {
             showAlert(data.error || 'Failed to add product', 'error');
         }
     } catch (error) {
-        console.error('❌ Add product error:', error);
         showAlert('Network error: ' + error.message, 'error');
     } finally {
         if (submitBtn) {
@@ -366,27 +373,18 @@ function editProduct(productName) {
         return;
     }
 
-    // Populate edit form
-    const editName = document.getElementById('editItemName');
-    const editPrice = document.getElementById('editItemPrice');
-    const editCategory = document.getElementById('editItemCategory');
-    const editType = document.getElementById('editItemType');
-    const editDescription = document.getElementById('editItemDescription');
-    const editOldName = document.getElementById('editItemOldName');
-    
-    if (editName) editName.value = product.name;
-    if (editPrice) editPrice.value = product.price;
-    if (editCategory) editCategory.value = product.category;
-    if (editType) editType.value = product.type;
-    if (editDescription) editDescription.value = product.description || '';
-    if (editOldName) editOldName.value = product.name;
+    document.getElementById('editItemName').value = product.name;
+    document.getElementById('editItemPrice').value = product.price;
+    document.getElementById('editItemCategory').value = product.category;
+    document.getElementById('editItemType').value = product.type;
+    document.getElementById('editItemDescription').value = product.description || '';
+    document.getElementById('editItemOldName').value = product.name;
     
     const editImagePreview = document.getElementById('editImagePreview');
     if (editImagePreview && product.image) {
         editImagePreview.innerHTML = `<img src="${product.image}" alt="Preview">`;
     }
     
-    // Show edit modal
     showModal('editProductModal');
 }
 
@@ -394,12 +392,7 @@ async function updateProduct(e) {
     e.preventDefault();
     
     const formData = new FormData(e.target);
-    const oldName = document.getElementById('editItemOldName')?.value;
-    
-    if (!oldName) {
-        showAlert('Product name not found', 'error');
-        return;
-    }
+    const oldName = document.getElementById('editItemOldName').value;
     
     const productData = {
         oldName: oldName,
@@ -412,8 +405,6 @@ async function updateProduct(e) {
     };
 
     try {
-        console.log('✏️ Updating product:', productData);
-        
         const response = await fetch(SCRIPT_URL, {
             method: 'POST',
             headers: {
@@ -435,7 +426,6 @@ async function updateProduct(e) {
             showAlert(data.error || 'Failed to update product', 'error');
         }
     } catch (error) {
-        console.error('❌ Update product error:', error);
         showAlert('Network error: ' + error.message, 'error');
     }
 }
@@ -447,8 +437,6 @@ async function deleteProduct(productName) {
     }
 
     try {
-        console.log('🗑️ Deleting product:', productName);
-        
         const response = await fetch(SCRIPT_URL + '?action=deleteProduct&name=' + encodeURIComponent(productName));
         const data = await response.json();
 
@@ -460,7 +448,6 @@ async function deleteProduct(productName) {
             showAlert(data.error || 'Failed to delete product', 'error');
         }
     } catch (error) {
-        console.error('❌ Delete product error:', error);
         showAlert('Network error: ' + error.message, 'error');
     }
 }
@@ -468,8 +455,6 @@ async function deleteProduct(productName) {
 // Order Status Management
 async function updateOrderStatus(orderId, status) {
     try {
-        console.log('🔄 Updating order status:', { orderId, status });
-        
         const response = await fetch(SCRIPT_URL + `?action=updateOrderStatus&orderId=${encodeURIComponent(orderId)}&status=${status}`);
         const data = await response.json();
 
@@ -480,7 +465,6 @@ async function updateOrderStatus(orderId, status) {
             showAlert(data.error || 'Failed to update order status', 'error');
         }
     } catch (error) {
-        console.error('❌ Update order status error:', error);
         showAlert('Network error: ' + error.message, 'error');
     }
 }
@@ -488,8 +472,6 @@ async function updateOrderStatus(orderId, status) {
 // Bill Generation
 async function generateBill(orderId) {
     try {
-        console.log('🧾 Generating bill for order:', orderId);
-        
         const response = await fetch(SCRIPT_URL + `?action=generateBill&orderId=${encodeURIComponent(orderId)}`);
         const data = await response.json();
 
@@ -500,7 +482,6 @@ async function generateBill(orderId) {
             showAlert(data.error || 'Failed to generate bill', 'error');
         }
     } catch (error) {
-        console.error('❌ Generate bill error:', error);
         showAlert('Network error: ' + error.message, 'error');
     }
 }
@@ -704,7 +685,6 @@ function initializeCharts() {
 }
 
 function updateCharts(salesData, topProducts) {
-    // Update sales chart
     if (salesChart && salesData && salesData.length > 0) {
         salesChart.data.labels = salesData.map(item => {
             const date = new Date(item.date);
@@ -714,11 +694,9 @@ function updateCharts(salesData, topProducts) {
         salesChart.update();
     }
 
-    // Update products chart
     if (productsChart && topProducts && topProducts.length > 0) {
         const top5 = topProducts.slice(0, 5);
         productsChart.data.labels = top5.map(item => {
-            // Shorten long product names
             return item.name.length > 15 ? item.name.substring(0, 15) + '...' : item.name;
         });
         productsChart.data.datasets[0].data = top5.map(item => item.count);
@@ -728,18 +706,16 @@ function updateCharts(salesData, topProducts) {
 
 // Utility Functions
 function setupEventListeners() {
-    // Login form
+    const loginForm = document.getElementById('loginForm');
     if (loginForm) {
         loginForm.addEventListener('submit', handleLogin);
     }
     
-    // Add product form
     const addProductForm = document.querySelector('.menu-form');
     if (addProductForm) {
         addProductForm.addEventListener('submit', addMenuItem);
     }
     
-    // Edit product form
     const editProductForm = document.getElementById('editProductForm');
     if (editProductForm) {
         editProductForm.addEventListener('submit', updateProduct);
