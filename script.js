@@ -1,6 +1,4 @@
-// ---------- CONFIG ----------
-const SHEET_URL = "https://script.google.com/macros/s/AKfycbyYXyDhUbqdhau8XeDdKbKzvsyNJEJ0gL7h2ucTgjZ_cJrxdG6ZkAp-f0ecL7yWDdw/exec";
-
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbyxRhVV7xrOCulxgZOtIkLvMFg6qsRO6MRwibEuI_gTb6Dr8FaF2RNYDyxNvIs9n6QH/exec";
 const MENU_CACHE_KEY = "gd_menu_cache_v1";
 const CART_CACHE_KEY = "gd_cart_cache_v1";
 const MENU_CACHE_TS = "gd_menu_cache_ts";
@@ -356,19 +354,19 @@ function updateCart() {
 // ---------- FIXED: Place order with proper mobile number ----------
 function placeOrder() {
   const name = document.getElementById("userName")?.value.trim();
-  const phone = document.getElementById("phone")?.value.trim(); // ✅ Fixed: using correct ID
+  const phone = document.getElementById("phone")?.value.trim();
   const email = document.getElementById("userEmail")?.value.trim();
   const table = document.getElementById("userTable")?.value.trim() || "N/A";
   const note = document.getElementById("userNote")?.value.trim() || "No note";
 
   if (!name) { alert("❌ Please enter your name"); return; }
-  if (!phone) { alert("❌ Please enter your phone number"); return; } // ✅ Added phone validation
+  if (!phone) { alert("❌ Please enter your phone number"); return; }
   if (cart.length === 0) { alert("❌ Please add items to your cart"); return; }
 
   const orderData = {
     name: name,
     email: email,
-    phone: phone, // ✅ This will now be properly sent
+    phone: phone,
     table: table,
     review: note,
     cart: cart.map(item => ({ 
