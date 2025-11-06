@@ -1,7 +1,7 @@
 // =============================================
 // ✅ SCRIPT_URL - YEH USE KARO
 // =============================================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby9O_HhQ58nb7Gb-4XyWx12nU4tCeKFUw16EHVKO5FiCg2A47JGfuXiblhnmkTOqSoc/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx_sJ3kh3o6xJSxHDl4dCsG8TrNmuTnjgtl9ttG3QEKp1fJuehqeI_cf4YnCHJcXIdC/exec';
 
 // =============================================
 // GLOBAL STATE
