@@ -1,7 +1,7 @@
 // =============================================
 // ✅ SCRIPT_URL DEFINED AT THE VERY TOP
 // =============================================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby9O_HhQ58nb7Gb-4XyWx12nU4tCeKFUw16EHVKO5FiCg2A47JGfuXiblhnmkTOqSoc/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzaO83oUTNGZVdZT4dri5nFTIrWvWjbvZtALsK45pQXDCgeHNSm20mgGFXJ-h-WVNW0/exec';
 
 // =============================================
 // GLOBAL STATE
