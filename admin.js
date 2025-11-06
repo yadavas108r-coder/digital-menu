@@ -1,35 +1,27 @@
 // =============================================
-// ✅ FIXED: SCRIPT_URL DEFINED AT THE VERY TOP
+// ✅ SCRIPT_URL DEFINED AT THE VERY TOP
 // =============================================
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby9O_HhQ58nb7Gb-4XyWx12nU4tCeKFUw16EHVKO5FiCg2A47JGfuXiblhnmkTOqSoc/exec';
 
 // =============================================
 // GLOBAL STATE
 // =============================================
-let currentUser = null;
 let allProducts = [];
 let allOrders = [];
 let salesChart = null;
 let productsChart = null;
 
 // =============================================
-// ✅ FIXED JSONP HELPER FUNCTION
+// ✅ SIMPLE JSONP HELPER FUNCTION
 // =============================================
 function jsonpRequest(url) {
     return new Promise((resolve, reject) => {
-        const callbackName = 'jsonp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        
-        // Clean URL - remove existing callback if any
-        let cleanUrl = url.split('&callback=')[0].split('?callback=')[0];
-        cleanUrl += (cleanUrl.includes('?') ? '&' : '?') + 'callback=' + callbackName;
-        
-        console.log('📡 JSONP Request:', cleanUrl);
+        const callbackName = 'callback_' + Date.now();
         
         const script = document.createElement('script');
-        script.src = cleanUrl;
+        script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + callbackName;
         
         window[callbackName] = function(data) {
-            console.log('✅ JSONP Response received:', data);
             delete window[callbackName];
             if (script.parentNode) {
                 script.parentNode.removeChild(script);
@@ -38,12 +30,11 @@ function jsonpRequest(url) {
         };
         
         script.onerror = function() {
-            console.error('❌ JSONP Request failed for URL:', cleanUrl);
             delete window[callbackName];
             if (script.parentNode) {
                 script.parentNode.removeChild(script);
             }
-            reject(new Error('JSONP request failed - Check if Apps Script is deployed correctly'));
+            reject(new Error('Request failed'));
         };
         
         // Add timeout
@@ -53,27 +44,12 @@ function jsonpRequest(url) {
                 if (script.parentNode) {
                     script.parentNode.removeChild(script);
                 }
-                reject(new Error('JSONP timeout - No response from server'));
+                reject(new Error('Request timeout'));
             }
         }, 10000);
         
         document.head.appendChild(script);
     });
-}
-
-// =============================================
-// ✅ SIMPLE TEST FUNCTION
-// =============================================
-async function testConnection() {
-    try {
-        console.log('🔗 Testing connection to:', SCRIPT_URL);
-        const testData = await jsonpRequest(SCRIPT_URL + '?action=getDashboardStats');
-        console.log('✅ Connection test successful:', testData);
-        return true;
-    } catch (error) {
-        console.error('❌ Connection test failed:', error);
-        return false;
-    }
 }
 
 // =============================================
@@ -94,7 +70,7 @@ function hideLoading(section) {
     }
 }
 
-function showAlert(message, type = 'info', container = null) {
+function showAlert(message, type = 'info') {
     const alertDiv = document.createElement('div');
     alertDiv.className = `alert alert-${type}`;
     alertDiv.innerHTML = `
@@ -106,8 +82,7 @@ function showAlert(message, type = 'info', container = null) {
         </div>
     `;
     
-    const targetContainer = container || document.body;
-    targetContainer.appendChild(alertDiv);
+    document.body.appendChild(alertDiv);
     
     setTimeout(() => {
         if (alertDiv.parentNode) {
@@ -145,32 +120,8 @@ function updateCurrentTime() {
 }
 
 // =============================================
-// AUTHENTICATION FUNCTIONS
+// ✅ NO LOGIN - DIRECT DASHBOARD ACCESS
 // =============================================
-function checkAuthentication() {
-    const savedUser = localStorage.getItem('adminUser');
-    if (savedUser) {
-        try {
-            currentUser = JSON.parse(savedUser);
-            showDashboard();
-        } catch (e) {
-            console.error('❌ Error parsing saved user:', e);
-            localStorage.removeItem('adminUser');
-            showLogin();
-        }
-    } else {
-        showLogin();
-    }
-}
-
-function showLogin() {
-    const loginSection = document.getElementById('loginSection');
-    const dashboardSection = document.getElementById('dashboardSection');
-    
-    if (loginSection) loginSection.style.display = 'flex';
-    if (dashboardSection) dashboardSection.style.display = 'none';
-}
-
 function showDashboard() {
     const loginSection = document.getElementById('loginSection');
     const dashboardSection = document.getElementById('dashboardSection');
@@ -178,79 +129,7 @@ function showDashboard() {
     if (loginSection) loginSection.style.display = 'none';
     if (dashboardSection) dashboardSection.style.display = 'block';
     
-    // Test connection first
-    testConnection().then(success => {
-        if (success) {
-            loadDashboardData();
-        } else {
-            showAlert('Cannot connect to server. Please check your Apps Script deployment.', 'error');
-        }
-    });
-}
-
-function logout() {
-    localStorage.removeItem('adminUser');
-    currentUser = null;
-    showLogin();
-    showAlert('Logged out successfully', 'success');
-}
-
-// =============================================
-// ✅ FIXED LOGIN HANDLER
-// =============================================
-async function handleLogin(e) {
-    if (e) e.preventDefault();
-    
-    console.log('🔐 Login initiated...');
-    
-    const loginForm = document.getElementById('loginForm');
-    if (!loginForm) {
-        console.error('❌ Login form not found');
-        return;
-    }
-    
-    const username = document.getElementById('username')?.value;
-    const password = document.getElementById('password')?.value;
-    
-    if (!username || !password) {
-        showAlert('Please enter both username and password', 'error', document.getElementById('loginAlert'));
-        return;
-    }
-
-    console.log('🔐 Attempting login with:', { username });
-
-    const loginBtn = loginForm.querySelector('button');
-    if (loginBtn) {
-        loginBtn.disabled = true;
-        loginBtn.textContent = 'Logging in...';
-    }
-
-    try {
-        // ✅ Simple URL construction for login
-        const loginUrl = `${SCRIPT_URL}?action=adminLogin&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
-        console.log('📡 Login URL:', loginUrl);
-        
-        const data = await jsonpRequest(loginUrl);
-        console.log('📨 Login response received:', data);
-
-        if (data && data.success) {
-            localStorage.setItem('adminUser', JSON.stringify(data.user));
-            currentUser = data.user;
-            showDashboard();
-            showAlert('Login successful! Welcome back!', 'success');
-        } else {
-            const errorMsg = data?.error || 'Invalid username or password';
-            showAlert(errorMsg, 'error', document.getElementById('loginAlert'));
-        }
-    } catch (error) {
-        console.error('❌ Login error:', error);
-        showAlert('Login failed: ' + error.message, 'error', document.getElementById('loginAlert'));
-    } finally {
-        if (loginBtn) {
-            loginBtn.disabled = false;
-            loginBtn.textContent = 'Login to Dashboard';
-        }
-    }
+    loadDashboardData();
 }
 
 // =============================================
@@ -277,7 +156,6 @@ function parseOrderItems(itemsJson) {
         }
         return itemsJson || [];
     } catch (e) {
-        console.error('Error parsing order items:', e);
         return [];
     }
 }
@@ -410,12 +288,12 @@ async function loadDashboardData() {
         
         console.log('📊 Loading dashboard data...');
         
-        // Load basic data first
+        // Load basic data
         const stats = await jsonpRequest(SCRIPT_URL + '?action=getDashboardStats');
         const ordersData = await jsonpRequest(SCRIPT_URL + '?action=getOrders');
         const productsData = await jsonpRequest(SCRIPT_URL + '?action=getAllProducts');
 
-        console.log('📈 Basic data loaded successfully');
+        console.log('📈 Data loaded successfully');
 
         updateDashboardStats(stats);
         allOrders = ordersData.orders || [];
@@ -424,26 +302,17 @@ async function loadDashboardData() {
         renderOrdersTable(allOrders);
         renderProductsTable(allProducts);
         
-        // Try to load chart data (optional)
-        try {
-            const salesData = await jsonpRequest(SCRIPT_URL + '?action=getSalesData');
-            const topProducts = await jsonpRequest(SCRIPT_URL + '?action=getTopProducts');
-            updateCharts(salesData, topProducts);
-        } catch (chartError) {
-            console.log('📊 Charts data not available:', chartError);
-        }
-        
         hideLoading('dashboard');
         
     } catch (error) {
         console.error('❌ Dashboard load error:', error);
-        showAlert('Failed to load dashboard data: ' + error.message, 'error');
+        showAlert('Failed to load dashboard data. Please check your internet connection.', 'error');
         hideLoading('dashboard');
     }
 }
 
 // =============================================
-// CHART FUNCTIONS (SIMPLIFIED)
+// CHART FUNCTIONS
 // =============================================
 function initializeCharts() {
     const salesCanvas = document.getElementById('salesChart');
@@ -497,11 +366,6 @@ function initializeCharts() {
             }
         });
     }
-}
-
-function updateCharts(salesData, topProducts) {
-    // Simplified chart updates
-    console.log('📊 Updating charts with data:', { salesData, topProducts });
 }
 
 // =============================================
@@ -571,7 +435,6 @@ function editProduct(productName) {
         return;
     }
 
-    // Populate edit form
     document.getElementById('editItemName').value = product.name;
     document.getElementById('editItemPrice').value = product.price;
     document.getElementById('editItemCategory').value = product.category;
@@ -808,11 +671,6 @@ function resetImagePreview() {
 // EVENT LISTENERS & INITIALIZATION
 // =============================================
 function setupEventListeners() {
-    const loginForm = document.getElementById('loginForm');
-    if (loginForm) {
-        loginForm.addEventListener('submit', handleLogin);
-    }
-    
     const addProductForm = document.querySelector('.menu-form');
     if (addProductForm) {
         addProductForm.addEventListener('submit', addMenuItem);
@@ -825,10 +683,10 @@ function setupEventListeners() {
 }
 
 function initializeAdminPanel() {
-    console.log('🚀 Admin Panel Initializing...');
-    console.log('✅ SCRIPT_URL:', SCRIPT_URL);
+    console.log('🚀 Admin Panel Starting...');
     
-    checkAuthentication();
+    // ✅ NO LOGIN - DIRECT ACCESS
+    showDashboard();
     initializeCharts();
     setupEventListeners();
     updateCurrentTime();
@@ -846,7 +704,6 @@ function loadDashboard() {
 // =============================================
 // GLOBAL FUNCTION EXPORTS & INITIALIZATION
 // =============================================
-window.handleLogin = handleLogin;
 window.addMenuItem = addMenuItem;
 window.updateProduct = updateProduct;
 window.deleteProduct = deleteProduct;
@@ -857,7 +714,6 @@ window.closeBillModal = closeBillModal;
 window.previewImage = previewImage;
 window.previewEditImage = previewEditImage;
 window.loadDashboard = loadDashboard;
-window.logout = logout;
 window.editProduct = editProduct;
 window.closeModal = closeModal;
 
