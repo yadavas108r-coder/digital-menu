@@ -1,7 +1,8 @@
 // =============================================
-// ✅ SCRIPT_URL - YEH USE KARO
+// ✅ SCRIPT_URL - TEST KARNE KE LIYE
 // =============================================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx_sJ3kh3o6xJSxHDl4dCsG8TrNmuTnjgtl9ttG3QEKp1fJuehqeI_cf4YnCHJcXIdC/exec';
+// Pehle test karo, agar kaam kare toh yeh use karo
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxIMrO5EA7bHI65V7dFWk1kurvPyg17FONldTnWNc25KdrVo2GdSdMh78u0sC4YL-QG/exec';
 
 // =============================================
 // GLOBAL STATE
@@ -12,18 +13,23 @@ let salesChart = null;
 let productsChart = null;
 
 // =============================================
-// ✅ IMPROVED JSONP HELPER
+// ✅ BETTER JSONP HELPER WITH DEBUGGING
 // =============================================
 function jsonpRequest(url) {
     return new Promise((resolve, reject) => {
         const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
         
+        console.log('🔧 Making JSONP request to:', url);
+        
         const script = document.createElement('script');
         script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + callbackName;
         
         window[callbackName] = function(data) {
+            console.log('✅ JSONP Response received:', data);
             delete window[callbackName];
-            document.head.removeChild(script);
+            if (script.parentNode) {
+                script.parentNode.removeChild(script);
+            }
             
             if (data && data.status === 'error') {
                 reject(new Error(data.error || 'Server error'));
@@ -33,26 +39,49 @@ function jsonpRequest(url) {
         };
         
         script.onerror = function() {
+            console.error('❌ JSONP Script load failed for URL:', url);
             delete window[callbackName];
             if (script.parentNode) {
                 script.parentNode.removeChild(script);
             }
-            reject(new Error('Network error - Check script URL'));
+            reject(new Error('Network error - Cannot connect to server. Check: 1) Script URL 2) Deployment 3) Internet'));
         };
         
-        // Timeout after 10 seconds
+        // Timeout after 15 seconds
         setTimeout(() => {
             if (window[callbackName]) {
+                console.error('❌ JSONP Timeout for URL:', url);
                 delete window[callbackName];
                 if (script.parentNode) {
                     script.parentNode.removeChild(script);
                 }
-                reject(new Error('Request timeout'));
+                reject(new Error('Request timeout - Server not responding'));
             }
-        }, 10000);
+        }, 15000);
         
         document.head.appendChild(script);
+        console.log('📤 JSONP Script injected:', script.src);
     });
+}
+
+// =============================================
+// ✅ TEST CONNECTION FUNCTION
+// =============================================
+async function testConnection() {
+    try {
+        console.log('🔧 Testing connection to:', SCRIPT_URL);
+        showAlert('Testing connection to server...', 'info');
+        
+        const result = await jsonpRequest(SCRIPT_URL + '?action=testConnection');
+        console.log('✅ Connection test successful:', result);
+        
+        showAlert('✅ Server connection successful!', 'success');
+        return true;
+    } catch (error) {
+        console.error('❌ Connection test failed:', error);
+        showAlert(`❌ Connection failed: ${error.message}`, 'error');
+        return false;
+    }
 }
 
 // =============================================
@@ -132,7 +161,12 @@ function showDashboard() {
     if (loginSection) loginSection.style.display = 'none';
     if (dashboardSection) dashboardSection.style.display = 'block';
     
-    loadDashboardData();
+    // Pehle connection test karo
+    testConnection().then(success => {
+        if (success) {
+            loadDashboardData();
+        }
+    });
 }
 
 function updateDashboardStats(stats) {
@@ -149,13 +183,11 @@ function updateDashboardStats(stats) {
     });
 }
 
-// ✅ FIX: Better items parsing
 function parseOrderItems(itemsJson) {
     try {
         if (!itemsJson) return [];
         
         if (typeof itemsJson === 'string') {
-            // Try to parse JSON
             try {
                 const parsed = JSON.parse(itemsJson);
                 if (Array.isArray(parsed)) {
@@ -166,7 +198,6 @@ function parseOrderItems(itemsJson) {
                     }));
                 }
             } catch (e) {
-                // If JSON parsing fails, check if it's a number
                 const numericValue = parseFloat(itemsJson);
                 if (!isNaN(numericValue)) {
                     return [{
@@ -175,7 +206,6 @@ function parseOrderItems(itemsJson) {
                         quantity: 1
                     }];
                 }
-                // Return as single item
                 return [{
                     name: itemsJson,
                     price: 0,
@@ -203,7 +233,6 @@ function calculateOrderTotal(items) {
     return items.reduce((total, item) => total + (parseFloat(item.price) * parseInt(item.quantity)), 0);
 }
 
-// ✅ FIX: Better orders rendering
 function renderOrdersTable(orders) {
     const tbody = document.getElementById('ordersTableBody');
     const ordersTable = document.getElementById('ordersTable');
@@ -219,7 +248,6 @@ function renderOrdersTable(orders) {
     }
 
     const ordersHtml = orders.map(order => {
-        // ✅ FIX: Better timestamp handling
         let orderDate;
         try {
             orderDate = new Date(order.Timestamp || order.Date || order.timestamp).toLocaleString('en-IN');
@@ -227,7 +255,6 @@ function renderOrdersTable(orders) {
             orderDate = 'Invalid Date';
         }
         
-        // ✅ FIX: Better items parsing
         const items = parseOrderItems(order.Items || order.items);
         const totalAmount = order.Total || order.totalAmount || calculateOrderTotal(items);
         const status = order.Status || order.status || 'pending';
@@ -338,14 +365,14 @@ async function loadDashboardData() {
         
         console.log('🚀 Loading dashboard data...');
         
-        // Load all data in parallel
+        // Load all data
         const [stats, ordersData, productsData] = await Promise.all([
             jsonpRequest(SCRIPT_URL + '?action=getDashboardStats'),
             jsonpRequest(SCRIPT_URL + '?action=getOrders'),
             jsonpRequest(SCRIPT_URL + '?action=getAllProducts')
         ]);
 
-        console.log('✅ Data loaded:', {
+        console.log('✅ Data loaded successfully:', {
             stats: stats,
             orders: ordersData.orders?.length || 0,
             products: productsData.products?.length || 0
@@ -361,23 +388,16 @@ async function loadDashboardData() {
         
         hideLoading('dashboard');
         
-        // Show success message
         if (allOrders.length > 0 || allProducts.length > 0) {
-            showAlert(`Dashboard loaded successfully! Orders: ${allOrders.length}, Products: ${allProducts.length}`, 'success');
+            showAlert(`✅ Dashboard loaded! Orders: ${allOrders.length}, Products: ${allProducts.length}`, 'success');
         } else {
-            showAlert('Dashboard loaded but no data found. Add some orders and products!', 'info');
+            showAlert('ℹ️ Dashboard loaded but no data found.', 'info');
         }
         
     } catch (error) {
         console.error('❌ Dashboard load error:', error);
         
         let errorMessage = 'Failed to load data: ' + error.message;
-        if (error.message.includes('Network error')) {
-            errorMessage = 'Cannot connect to server. Please check your internet connection and try again.';
-        } else if (error.message.includes('timeout')) {
-            errorMessage = 'Server is taking too long to respond. Please try again.';
-        }
-        
         showAlert(errorMessage, 'error');
         
         // Show empty state
@@ -478,8 +498,6 @@ async function addMenuItem(e) {
     }
 
     try {
-        console.log('Adding product:', productData);
-        
         const result = await jsonpRequest(
             SCRIPT_URL + '?action=addProduct&' + 
             'name=' + encodeURIComponent(productData.name) +
@@ -490,19 +508,15 @@ async function addMenuItem(e) {
             '&image=' + encodeURIComponent(productData.image)
         );
 
-        console.log('Add product result:', result);
-
         if (result.success) {
             showAlert('✅ Product added successfully!', 'success');
             document.querySelector('.menu-form').reset();
             resetImagePreview();
-            // Reload products
-            setTimeout(() => loadDashboardData(), 1000);
+            loadDashboardData();
         } else {
             showAlert(`❌ Failed to add product: ${result.error}`, 'error');
         }
     } catch (error) {
-        console.error('Add product error:', error);
         showAlert(`❌ Error: ${error.message}`, 'error');
     } finally {
         if (submitBtn) {
@@ -541,7 +555,7 @@ async function updateProduct(e) {
     const name = document.getElementById('editItemName').value;
     const price = document.getElementById('editItemPrice').value;
     const category = document.getElementById('editItemCategory').value;
-    const type = document.getElementById('editItemType').value;
+    const type = document.getElementById('editItemType')?.value;
     
     if (!oldName || !name || !price || !category || !type) {
         showAlert('Please fill all required fields', 'error');
@@ -578,7 +592,6 @@ async function updateProduct(e) {
             showAlert(`❌ Failed to update product: ${result.error}`, 'error');
         }
     } catch (error) {
-        console.error('Update product error:', error);
         showAlert(`❌ Error: ${error.message}`, 'error');
     }
 }
@@ -599,7 +612,6 @@ async function deleteProduct(productName) {
             showAlert(`❌ Failed to delete product: ${result.error}`, 'error');
         }
     } catch (error) {
-        console.error('Delete product error:', error);
         showAlert(`❌ Error: ${error.message}`, 'error');
     }
 }
@@ -607,41 +619,29 @@ async function deleteProduct(productName) {
 // =============================================
 // ORDER OPERATIONS
 // =============================================
-// ✅ FIX: Better order status update with logging
 async function updateOrderStatus(orderId, status) {
     try {
-        console.log('Updating order status:', { orderId, status });
-        
         const result = await jsonpRequest(
             SCRIPT_URL + '?action=updateOrderStatus&orderId=' + 
             encodeURIComponent(orderId) + '&status=' + status
         );
 
-        console.log('Status update result:', result);
-
         if (result.success) {
             showAlert(`✅ Order marked as ${status}!`, 'success');
-            // Reload data to reflect changes
-            setTimeout(() => loadDashboardData(), 1000);
+            loadDashboardData();
         } else {
             showAlert(`❌ Failed to update order: ${result.error}`, 'error');
         }
     } catch (error) {
-        console.error('Order status update error:', error);
         showAlert(`❌ Error: ${error.message}`, 'error');
     }
 }
 
-// ✅ FIX: Better bill generation with logging
 async function generateBill(orderId) {
     try {
-        console.log('Generating bill for:', orderId);
-        
         const result = await jsonpRequest(
             SCRIPT_URL + '?action=generateBill&orderId=' + encodeURIComponent(orderId)
         );
-
-        console.log('Bill generation result:', result);
 
         if (result.success) {
             renderBill(result.bill);
@@ -650,7 +650,6 @@ async function generateBill(orderId) {
             showAlert(`❌ Failed to generate bill: ${result.error}`, 'error');
         }
     } catch (error) {
-        console.error('Bill generation error:', error);
         showAlert(`❌ Error: ${error.message}`, 'error');
     }
 }
@@ -722,9 +721,7 @@ function renderBill(bill) {
     billContent.innerHTML = billHtml;
 }
 
-// ✅ FIX: ADDED MISSING printBill FUNCTION
 function printBill() {
-    console.log('Printing bill...');
     window.print();
 }
 
@@ -778,7 +775,6 @@ function resetImagePreview() {
 // EVENT LISTENERS & INITIALIZATION
 // =============================================
 function setupEventListeners() {
-    // Form submissions
     const addProductForm = document.querySelector('.menu-form');
     if (addProductForm) {
         addProductForm.addEventListener('submit', addMenuItem);
@@ -793,7 +789,6 @@ function setupEventListeners() {
 function initializeAdminPanel() {
     console.log('🚀 Admin Panel Starting...');
     
-    // Direct access to dashboard
     showDashboard();
     initializeCharts();
     setupEventListeners();
@@ -816,14 +811,14 @@ function logout() {
 }
 
 // =============================================
-// ✅ GLOBAL FUNCTION EXPORTS - COMPLETE LIST
+// GLOBAL FUNCTION EXPORTS
 // =============================================
 window.addMenuItem = addMenuItem;
 window.updateProduct = updateProduct;
 window.deleteProduct = deleteProduct;
 window.updateOrderStatus = updateOrderStatus;
 window.generateBill = generateBill;
-window.printBill = printBill; // ✅ ADDED THIS
+window.printBill = printBill;
 window.closeBillModal = closeBillModal;
 window.previewImage = previewImage;
 window.previewEditImage = previewEditImage;
@@ -831,6 +826,7 @@ window.loadDashboard = loadDashboard;
 window.editProduct = editProduct;
 window.closeModal = closeModal;
 window.logout = logout;
+window.testConnection = testConnection;
 
 // Initialize when DOM is loaded
 if (document.readyState === 'loading') {
