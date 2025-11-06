@@ -547,111 +547,240 @@ async function deleteProduct(productName) {
 }
 
 // =============================================
-// ORDER OPERATIONS
 // =============================================
-async function updateOrderStatus(orderId, status) {
-    try {
-        const result = await jsonpRequest(SCRIPT_URL + '?action=updateOrderStatus&orderId=' + encodeURIComponent(orderId) + '&status=' + status);
+// ✅ IMPROVED ORDER FUNCTIONS
+// =============================================
+function renderOrdersTable(orders) {
+    const tbody = document.getElementById('ordersTableBody');
+    const ordersTable = document.getElementById('ordersTable');
+    const ordersLoading = document.getElementById('ordersLoading');
+    
+    if (!tbody || !ordersTable || !ordersLoading) return;
+    
+    if (!orders || orders.length === 0) {
+        ordersTable.style.display = 'none';
+        ordersLoading.innerHTML = '<div class="loading">No orders found</div>';
+        ordersLoading.style.display = 'block';
+        return;
+    }
 
-        if (result.success) {
-            showAlert(`Order marked as ${status}!`, 'success');
-            loadDashboardData();
-        } else {
-            showAlert(result.error || 'Failed to update order status', 'error');
+    const ordersHtml = orders.map(order => {
+        // ✅ FIX: Better timestamp handling
+        let orderDate;
+        try {
+            orderDate = new Date(order.Timestamp || order.Date || order.timestamp).toLocaleString('en-IN');
+        } catch (e) {
+            orderDate = 'Invalid Date';
         }
-    } catch (error) {
-        showAlert('Error: ' + error.message, 'error');
+        
+        // ✅ FIX: Better items parsing
+        const items = parseOrderItems(order.Items || order.items);
+        const totalAmount = order.Total || order.totalAmount || calculateOrderTotal(items);
+        const status = order.Status || order.status || 'pending';
+        const orderId = order.Timestamp || order.timestamp || order.Date;
+        
+        return `
+            <tr>
+                <td>${orderDate}</td>
+                <td><strong>${order.Name || order.name || 'N/A'}</strong></td>
+                <td>${order.Phone || order.phone || 'N/A'}</td>
+                <td>${order.Table || order.table || 'N/A'}</td>
+                <td>
+                    <div style="max-width: 200px;">
+                        ${items.map(item => `
+                            <div style="font-size: 12px; color: #666;">
+                                ${item.quantity}x ${item.name} - ₹${(item.price * item.quantity).toFixed(2)}
+                            </div>
+                        `).join('')}
+                    </div>
+                </td>
+                <td><strong>₹${parseFloat(totalAmount).toFixed(2)}</strong></td>
+                <td>
+                    <span class="status-badge status-${status}">
+                        ${status}
+                    </span>
+                </td>
+                <td>
+                    <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                        <button class="invoice-btn" onclick="generateBill('${orderId}')">
+                            🧾 Bill
+                        </button>
+                        ${status !== 'completed' ? `
+                            <button class="complete-btn" onclick="updateOrderStatus('${orderId}', 'completed')">
+                                ✅ Complete
+                            </button>
+                        ` : ''}
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    tbody.innerHTML = ordersHtml;
+    ordersLoading.style.display = 'none';
+    ordersTable.style.display = 'table';
+}
+
+// ✅ FIX: Better items parsing
+function parseOrderItems(itemsJson) {
+    try {
+        if (!itemsJson) return [];
+        
+        if (typeof itemsJson === 'string') {
+            // Try to parse JSON
+            try {
+                const parsed = JSON.parse(itemsJson);
+                if (Array.isArray(parsed)) {
+                    return parsed.map(item => ({
+                        name: item.name || 'Item',
+                        price: parseFloat(item.price) || 0,
+                        quantity: parseInt(item.quantity) || 1
+                    }));
+                }
+            } catch (e) {
+                // If JSON parsing fails, check if it's a number
+                const numericValue = parseFloat(itemsJson);
+                if (!isNaN(numericValue)) {
+                    return [{
+                        name: 'Order Total',
+                        price: numericValue,
+                        quantity: 1
+                    }];
+                }
+                // Return as single item
+                return [{
+                    name: itemsJson,
+                    price: 0,
+                    quantity: 1
+                }];
+            }
+        }
+        
+        if (Array.isArray(itemsJson)) {
+            return itemsJson.map(item => ({
+                name: item.name || 'Item',
+                price: parseFloat(item.price) || 0,
+                quantity: parseInt(item.quantity) || 1
+            }));
+        }
+        
+        return [];
+    } catch (e) {
+        console.error('Parse items error:', e);
+        return [];
     }
 }
 
+// ✅ FIX: Better order status update with logging
+async function updateOrderStatus(orderId, status) {
+    try {
+        console.log('Updating order status:', { orderId, status });
+        
+        const result = await jsonpRequest(
+            SCRIPT_URL + '?action=updateOrderStatus&orderId=' + 
+            encodeURIComponent(orderId) + '&status=' + status
+        );
+
+        console.log('Status update result:', result);
+
+        if (result.success) {
+            showAlert(`✅ Order marked as ${status}!`, 'success');
+            // Reload data to reflect changes
+            setTimeout(() => loadDashboardData(), 1000);
+        } else {
+            showAlert(`❌ Failed to update order: ${result.error}`, 'error');
+        }
+    } catch (error) {
+        console.error('Order status update error:', error);
+        showAlert(`❌ Error: ${error.message}`, 'error');
+    }
+}
+
+// ✅ FIX: Better bill generation with logging
 async function generateBill(orderId) {
     try {
-        const result = await jsonpRequest(SCRIPT_URL + '?action=generateBill&orderId=' + encodeURIComponent(orderId));
+        console.log('Generating bill for:', orderId);
+        
+        const result = await jsonpRequest(
+            SCRIPT_URL + '?action=generateBill&orderId=' + encodeURIComponent(orderId)
+        );
+
+        console.log('Bill generation result:', result);
 
         if (result.success) {
             renderBill(result.bill);
             showModal('billModal');
         } else {
-            showAlert(result.error || 'Failed to generate bill', 'error');
+            showAlert(`❌ Failed to generate bill: ${result.error}`, 'error');
         }
     } catch (error) {
-        showAlert('Error: ' + error.message, 'error');
+        console.error('Bill generation error:', error);
+        showAlert(`❌ Error: ${error.message}`, 'error');
     }
 }
 
-function renderBill(bill) {
-    const billContent = document.getElementById('billContent');
-    if (!billContent) return;
+// ✅ FIX: Better product addition
+async function addMenuItem(e) {
+    if (e) e.preventDefault();
     
-    const items = bill.items || [];
-    const total = bill.totalAmount || calculateOrderTotal(items);
+    const name = document.getElementById('itemName')?.value;
+    const price = document.getElementById('itemPrice')?.value;
+    const category = document.getElementById('itemCategory')?.value;
+    const type = document.getElementById('itemType')?.value;
     
-    const billHtml = `
-        <div class="bill-header">
-            <h2>🍦 Yadava's Ice Cream</h2>
-            <p>Delicious & Fresh</p>
-        </div>
+    if (!name || !price || !category || !type) {
+        showAlert('Please fill all required fields', 'error');
+        return;
+    }
+
+    const productData = {
+        name: name,
+        price: parseFloat(price),
+        category: category,
+        type: type,
+        description: document.getElementById('itemDescription')?.value || '',
+        image: document.getElementById('imagePreview')?.querySelector('img')?.src || ''
+    };
+
+    const submitBtn = document.querySelector('.menu-form button');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Adding...';
+    }
+
+    try {
+        console.log('Adding product:', productData);
         
-        <div class="bill-info">
-            <div class="bill-info-item">
-                <strong>Order ID:</strong>
-                <span>${bill.orderId || 'N/A'}</span>
-            </div>
-            <div class="bill-info-item">
-                <strong>Date & Time:</strong>
-                <span>${new Date(bill.timestamp).toLocaleString('en-IN')}</span>
-            </div>
-            <div class="bill-info-item">
-                <strong>Customer Name:</strong>
-                <span>${bill.customerName || 'N/A'}</span>
-            </div>
-            <div class="bill-info-item">
-                <strong>Phone:</strong>
-                <span>${bill.customerPhone || 'N/A'}</span>
-            </div>
-            <div class="bill-info-item">
-                <strong>Table No:</strong>
-                <span>${bill.tableNumber || 'N/A'}</span>
-            </div>
-        </div>
+        const result = await jsonpRequest(
+            SCRIPT_URL + '?action=addProduct&' + 
+            'name=' + encodeURIComponent(productData.name) +
+            '&price=' + productData.price +
+            '&category=' + encodeURIComponent(productData.category) +
+            '&type=' + encodeURIComponent(productData.type) +
+            '&description=' + encodeURIComponent(productData.description) +
+            '&image=' + encodeURIComponent(productData.image)
+        );
 
-        <div class="bill-items">
-            <h4>Order Items:</h4>
-            ${items.map(item => `
-                <div class="bill-item">
-                    <span class="item-name">${item.name}</span>
-                    <span class="item-quantity">${item.quantity} x ₹${item.price}</span>
-                    <span class="item-price">₹${item.price * item.quantity}</span>
-                </div>
-            `).join('')}
-        </div>
+        console.log('Add product result:', result);
 
-        <div class="bill-total">
-            <h3>TOTAL AMOUNT</h3>
-            <div class="amount">₹${total}</div>
-        </div>
-
-        ${bill.review && bill.review !== 'No note' ? `
-            <div class="bill-info-item" style="margin-top: 15px;">
-                <strong>Special Instructions:</strong>
-                <span>${bill.review}</span>
-            </div>
-        ` : ''}
-
-        <div class="bill-actions">
-            <button class="print-btn" onclick="printBill()">🖨️ Print Bill</button>
-        </div>
-    `;
-
-    billContent.innerHTML = billHtml;
-}
-
-function printBill() {
-    window.print();
-}
-
-function closeBillModal() {
-    closeModal('billModal');
+        if (result.success) {
+            showAlert('✅ Product added successfully!', 'success');
+            document.querySelector('.menu-form').reset();
+            resetImagePreview();
+            // Reload products
+            setTimeout(() => loadDashboardData(), 1000);
+        } else {
+            showAlert(`❌ Failed to add product: ${result.error}`, 'error');
+        }
+    } catch (error) {
+        console.error('Add product error:', error);
+        showAlert(`❌ Error: ${error.message}`, 'error');
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '➕ Add Item';
+        }
+    }
 }
 
 // =============================================
