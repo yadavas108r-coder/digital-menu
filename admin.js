@@ -2,7 +2,7 @@
 // ✅ SCRIPT_URL - YEH UPDATE KARO APNE NEW URL SE
 // =============================================
 // Tumhara naya URL yahan paste karo
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxIMrO5EA7bHI65V7dFWk1kurvPyg17FONldTnWNc25KdrVo2GdSdMh78u0sC4YL-QG/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby6obWhcDkAuTC4IeS0ezRDRO3jPLVqUpKZDF5RpiaRZFMS2C2dcT3P-nZZ9bnjj_pe/exec';
 
 // =============================================
 // GLOBAL STATE
