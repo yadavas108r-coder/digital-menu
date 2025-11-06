@@ -15,6 +15,87 @@
       background-color: #f7f8fa;
       color: #111;
     }
+
+    /* Login Styles */
+    .login-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%);
+    }
+
+    .login-box {
+      background: white;
+      padding: 2.5rem;
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .login-box h2 {
+      margin: 0 0 1.5rem 0;
+      color: #333;
+      font-size: 1.8rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+      text-align: left;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: #555;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px 15px;
+      border: 2px solid #e1e5e9;
+      border-radius: 10px;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: #ff6b6b;
+      box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
+    }
+
+    .login-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .login-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(255, 107, 107, 0.3);
+    }
+
+    .login-btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    /* Dashboard Styles */
+    .dashboard-container {
+      display: none;
+    }
+
     header {
       background: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%);
       color: white;
@@ -24,12 +105,24 @@
       align-items: center;
       box-shadow: 0 2px 10px rgba(255, 107, 107, 0.3);
     }
+
     header h1 {
       margin: 0;
       font-size: 20px;
       display: flex;
       align-items: center;
       gap: 10px;
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    #currentTime {
+      font-size: 14px;
+      opacity: 0.9;
     }
 
     main {
@@ -139,6 +232,23 @@
       box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
     }
 
+    .logout-btn {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border: 2px solid rgba(255,255,255,0.3);
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .logout-btn:hover {
+      background: rgba(255,255,255,0.3);
+      transform: translateY(-2px);
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -218,6 +328,7 @@
       justify-content: center;
       overflow: hidden;
       background: #f8f9fa;
+      margin: 0 auto;
     }
 
     .image-preview img {
@@ -293,7 +404,7 @@
       color: #00b894;
     }
 
-    /* Bill Modal Styles */
+    /* Modal Styles */
     .modal {
       display: none;
       position: fixed;
@@ -351,6 +462,7 @@
       overflow-y: auto;
     }
 
+    /* Bill Styles */
     .bill-header {
       text-align: center;
       margin-bottom: 20px;
@@ -469,13 +581,30 @@
       transform: translateY(-2px);
     }
 
-    footer {
-      background: #333;
-      color: white;
-      text-align: center;
-      padding: 20px;
-      font-size: 14px;
-      margin-top: 40px;
+    /* Alert Styles */
+    .alert {
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin: 10px 0;
+      font-weight: 500;
+    }
+
+    .alert-success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .alert-error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+
+    .alert-info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
     }
 
     .loading {
@@ -514,6 +643,12 @@
       .bill-actions {
         flex-direction: column;
       }
+      
+      .header-controls {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+      }
     }
 
     @media print {
@@ -544,104 +679,183 @@
   </style>
 </head>
 <body>
-  <header>
-    <h1>🍦 Yadava's Admin Dashboard</h1>
-    <button class="refresh-btn" onclick="loadDashboard()">🔄 Refresh All</button>
-  </header>
-
-  <main>
-    <!-- ANALYTICS -->
-    <div class="analytics">
-      <div class="card">
-        <h2 id="totalOrders">0</h2>
-        <p>Total Orders</p>
-      </div>
-      <div class="card">
-        <h2 id="totalSales">₹0</h2>
-        <p>Total Sales</p>
-      </div>
-      <div class="card">
-        <h2 id="todayOrders">0</h2>
-        <p>Today's Orders</p>
-      </div>
-      <div class="card">
-        <h2 id="pendingOrders">0</h2>
-        <p>Pending Orders</p>
-      </div>
-    </div>
-
-    <!-- CHARTS -->
-    <div class="charts-grid">
-      <div class="chart-container">
-        <h3>📈 Sales Trend (Last 7 Days)</h3>
-        <canvas id="salesChart"></canvas>
-      </div>
-      <div class="chart-container">
-        <h3>🏆 Top Selling Products</h3>
-        <canvas id="productsChart"></canvas>
-      </div>
-    </div>
-
-    <!-- ORDERS -->
-    <div class="section">
-      <h3>📦 Orders List</h3>
-      <div id="ordersLoading" class="loading">Loading orders...</div>
-      <table id="ordersTable" style="display: none;">
-        <thead>
-          <tr>
-            <th>Time</th>
-            <th>Name</th>
-            <th>Phone</th>
-            <th>Table</th>
-            <th>Items</th>
-            <th>Total</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="ordersTableBody">
-        </tbody>
-      </table>
-    </div>
-
-    <!-- MENU EDITOR -->
-    <div class="section">
-      <h3>📝 Menu Editor</h3>
-      <form class="menu-form" onsubmit="return addMenuItem(event)">
-        <input type="text" id="itemName" placeholder="Item Name" required />
-        <input type="number" id="itemPrice" placeholder="Price ₹" step="0.01" required />
-        <input type="text" id="itemCategory" placeholder="Category" required />
-        <textarea id="itemDescription" placeholder="Description"></textarea>
-        <select id="itemType" required>
-          <option value="veg">🟢 Veg</option>
-          <option value="non-veg">🔴 Non-Veg</option>
-        </select>
-        <div class="image-preview" id="imagePreview">
-          <span>Image Preview</span>
+  <!-- Login Section -->
+  <div id="loginSection" class="login-container">
+    <div class="login-box">
+      <h2>🔒 Admin Login</h2>
+      <div id="loginAlert"></div>
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username" required value="admin" placeholder="Enter your username">
         </div>
-        <input type="file" id="itemImage" accept="image/*" onchange="previewImage(this)" />
-        <button type="submit">➕ Add Item</button>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required value="admin123" placeholder="Enter your password">
+        </div>
+        <button type="submit" class="login-btn">Login to Dashboard</button>
       </form>
-
-      <div id="menuLoading" class="loading">Loading menu...</div>
-      <table id="menuTable" style="display: none;">
-        <thead>
-          <tr>
-            <th>Item</th>
-            <th>Price</th>
-            <th>Image</th>
-            <th>Category</th>
-            <th>Type</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="menuTableBody">
-        </tbody>
-      </table>
     </div>
-  </main>
+  </div>
 
-  <!-- BILL MODAL -->
+  <!-- Dashboard Section -->
+  <div id="dashboardSection" class="dashboard-container">
+    <header>
+      <h1>🍦 Yadava's Admin Dashboard</h1>
+      <div class="header-controls">
+        <span id="currentTime"></span>
+        <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+        <button class="refresh-btn" onclick="loadDashboard()">🔄 Refresh All</button>
+      </div>
+    </header>
+
+    <main>
+      <!-- ANALYTICS -->
+      <div class="analytics">
+        <div class="card">
+          <h2 id="totalOrders">0</h2>
+          <p>Total Orders</p>
+        </div>
+        <div class="card">
+          <h2 id="totalSales">₹0</h2>
+          <p>Total Sales</p>
+        </div>
+        <div class="card">
+          <h2 id="todayOrders">0</h2>
+          <p>Today's Orders</p>
+        </div>
+        <div class="card">
+          <h2 id="pendingOrders">0</h2>
+          <p>Pending Orders</p>
+        </div>
+      </div>
+
+      <!-- CHARTS -->
+      <div class="charts-grid">
+        <div class="chart-container">
+          <h3>📈 Sales Trend (Last 7 Days)</h3>
+          <canvas id="salesChart"></canvas>
+        </div>
+        <div class="chart-container">
+          <h3>🏆 Top Selling Products</h3>
+          <canvas id="productsChart"></canvas>
+        </div>
+      </div>
+
+      <!-- ORDERS -->
+      <div class="section">
+        <h3>📦 Orders List</h3>
+        <div id="ordersLoading" class="loading">Loading orders...</div>
+        <table id="ordersTable" style="display: none;">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Name</th>
+              <th>Phone</th>
+              <th>Table</th>
+              <th>Items</th>
+              <th>Total</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="ordersTableBody">
+          </tbody>
+        </table>
+      </div>
+
+      <!-- MENU EDITOR -->
+      <div class="section">
+        <h3>📝 Menu Editor</h3>
+        <form class="menu-form" onsubmit="return addMenuItem(event)">
+          <input type="text" id="itemName" placeholder="Item Name" required />
+          <input type="number" id="itemPrice" placeholder="Price ₹" step="0.01" required />
+          <input type="text" id="itemCategory" placeholder="Category" required />
+          <textarea id="itemDescription" placeholder="Description"></textarea>
+          <select id="itemType" required>
+            <option value="veg">🟢 Veg</option>
+            <option value="non-veg">🔴 Non-Veg</option>
+          </select>
+          <div class="image-preview" id="imagePreview">
+            <span>Image Preview</span>
+          </div>
+          <input type="file" id="itemImage" accept="image/*" onchange="previewImage(this)" />
+          <button type="submit">➕ Add Item</button>
+        </form>
+
+        <div id="menuLoading" class="loading">Loading menu...</div>
+        <table id="menuTable" style="display: none;">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Price</th>
+              <th>Image</th>
+              <th>Category</th>
+              <th>Type</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="menuTableBody">
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <!-- Edit Product Modal -->
+  <div id="editProductModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>✏️ Edit Product</h3>
+        <button class="close-modal" onclick="closeModal('editProductModal')">×</button>
+      </div>
+      <div class="modal-body">
+        <form id="editProductForm" onsubmit="return updateProduct(event)">
+          <input type="hidden" id="editItemOldName">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+            <div class="form-group">
+              <label for="editItemName">Product Name *</label>
+              <input type="text" id="editItemName" name="itemName" required>
+            </div>
+            <div class="form-group">
+              <label for="editItemPrice">Price (₹) *</label>
+              <input type="number" id="editItemPrice" name="itemPrice" step="0.01" required>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+            <div class="form-group">
+              <label for="editItemCategory">Category *</label>
+              <input type="text" id="editItemCategory" name="itemCategory" required>
+            </div>
+            <div class="form-group">
+              <label for="editItemType">Type *</label>
+              <select id="editItemType" name="itemType" required>
+                <option value="veg">🟢 Veg</option>
+                <option value="non-veg">🔴 Non-Veg</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="editItemDescription">Description</label>
+            <textarea id="editItemDescription" name="itemDescription" rows="3" style="width: 100%; padding: 10px; border: 2px solid #e9ecef; border-radius: 8px;"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Image Preview</label>
+            <div class="image-preview" id="editImagePreview">
+              <span>Image Preview</span>
+            </div>
+            <input type="file" id="editItemImage" accept="image/*" onchange="previewEditImage(this)" style="margin-top: 10px;">
+          </div>
+          <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button type="submit" class="complete-btn" style="flex: 1;">💾 Update Product</button>
+            <button type="button" class="delete-btn" onclick="deleteProduct(document.getElementById('editItemName').value)" style="flex: 1;">🗑️ Delete Product</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bill Modal -->
   <div id="billModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -649,9 +863,13 @@
         <button class="close-modal" onclick="closeBillModal()">×</button>
       </div>
       <div class="modal-body">
-        <div class="bill-header">
-          <h2>Yadava's Ice Cream</h2>
-          <p>Delicious & Fresh</p>
+        <div id="billContent">
+          <!-- Bill content will be loaded here -->
         </div>
-        
-        <div class="bill-info">
+      </div>
+    </div>
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>
