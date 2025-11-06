@@ -1,486 +1,738 @@
 const scriptURL = "https://script.google.com/macros/s/AKfycbyYXyDhUbqdhau8XeDdKbKzvsyNJEJ0gL7h2ucTgjZ_cJrxdG6ZkAp-f0ecL7yWDdw/exec";
 
-let salesChart, productsChart;
+// Global State
+let currentUser = null;
+let allProducts = [];
+let allOrders = [];
+let salesChart = null;
+let productsChart = null;
 
-// ✅ Test individual API calls
-async function testAPIs() {
-  console.log("🧪 Testing APIs...");
-  
-  const actions = ['getMenu', 'getOrders', 'getDashboardStats', 'getSalesData', 'getTopProducts'];
-  
-  for (let action of actions) {
-    try {
-      console.log(`🔍 Testing ${action}...`);
-      const url = `${scriptURL}?action=${action}`;
-      console.log(`📡 URL: ${url}`);
-      
-      const response = await fetch(url);
-      console.log(`📊 ${action} Response status:`, response.status, response.statusText);
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log(`✅ ${action} Success:`, data);
-      } else {
-        console.log(`❌ ${action} Failed:`, response.status);
-      }
-    } catch (error) {
-      console.log(`💥 ${action} Error:`, error.message);
-    }
-    console.log('---');
-  }
-}
+// DOM Elements
+const loginSection = document.getElementById('loginSection');
+const dashboardSection = document.getElementById('dashboardSection');
+const loginForm = document.getElementById('loginForm');
+const loginAlert = document.getElementById('loginAlert');
 
-// ✅ Simple Load Dashboard
-async function loadDashboard() {
-  console.log("🚀 Starting dashboard load...");
-  
-  showLoading('ordersLoading', 'Loading orders...');
-  showLoading('menuLoading', 'Loading menu...');
-  
-  try {
-    // Test APIs first
-    await testAPIs();
-    
-    // Then load actual data
-    console.log("📥 Loading actual data...");
-    
-    const menuResponse = await fetch(`${scriptURL}?action=getMenu`);
-    console.log("📋 Menu response:", menuResponse);
-    
-    if (menuResponse.ok) {
-      const menuData = await menuResponse.json();
-      console.log("📋 Menu data:", menuData);
-      updateMenuTable(menuData.menu || []);
-    } else {
-      console.log("❌ Menu failed:", menuResponse.status);
-      showError('menuLoading', 'Menu loading failed');
-    }
-    
-    const ordersResponse = await fetch(`${scriptURL}?action=getOrders`);
-    console.log("📦 Orders response:", ordersResponse);
-    
-    if (ordersResponse.ok) {
-      const ordersData = await ordersResponse.json();
-      console.log("📦 Orders data:", ordersData);
-      updateOrdersTable(ordersData.orders || []);
-    } else {
-      console.log("❌ Orders failed:", ordersResponse.status);
-      showError('ordersLoading', 'Orders loading failed');
-    }
-    
-    // Load other data
-    try {
-      const statsResponse = await fetch(`${scriptURL}?action=getDashboardStats`);
-      if (statsResponse.ok) {
-        const stats = await statsResponse.json();
-        updateAnalytics(stats);
-      }
-    } catch (e) { console.log("Stats error:", e); }
-    
-    try {
-      const salesResponse = await fetch(`${scriptURL}?action=getSalesData`);
-      if (salesResponse.ok) {
-        const salesData = await salesResponse.json();
-        updateSalesChart(Array.isArray(salesData) ? salesData : []);
-      }
-    } catch (e) { console.log("Sales error:", e); }
-    
-    try {
-      const productsResponse = await fetch(`${scriptURL}?action=getTopProducts`);
-      if (productsResponse.ok) {
-        const productsData = await productsResponse.json();
-        updateProductsChart(Array.isArray(productsData) ? productsData : []);
-      }
-    } catch (e) { console.log("Products error:", e); }
-    
-  } catch (error) {
-    console.error("💥 Main load error:", error);
-    showError('ordersLoading', 'Failed to load: ' + error.message);
-    showError('menuLoading', 'Failed to load: ' + error.message);
-  }
-}
-
-// ✅ Update Analytics Cards
-function updateAnalytics(stats) {
-  console.log("📊 Updating analytics:", stats);
-  if (!stats) return;
-  
-  document.getElementById("totalOrders").textContent = stats.totalOrders || 0;
-  document.getElementById("totalSales").textContent = `₹${stats.totalSales || 0}`;
-  document.getElementById("todayOrders").textContent = stats.todayOrders || 0;
-  document.getElementById("pendingOrders").textContent = stats.pendingOrders || 0;
-}
-
-// ✅ Update Sales Chart
-function updateSalesChart(salesData) {
-  const ctx = document.getElementById('salesChart');
-  if (!ctx) return;
-  
-  console.log("📈 Updating sales chart:", salesData);
-  
-  if (salesChart) salesChart.destroy();
-  
-  const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const data = [0, 0, 0, 0, 0, 0, 0];
-  
-  salesChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: 'Daily Sales (₹)',
-        data: data,
-        borderColor: '#ff6b6b',
-        backgroundColor: 'rgba(255, 107, 107, 0.1)',
-        borderWidth: 3,
-        fill: true,
-        tension: 0.4
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: { legend: { display: true } },
-      scales: {
-        y: {
-          beginAtZero: true,
-          ticks: { callback: value => '₹' + value }
-        }
-      }
-    }
-  });
-}
-
-// ✅ Update Products Chart
-function updateProductsChart(productsData) {
-  const ctx = document.getElementById('productsChart');
-  if (!ctx) return;
-  
-  console.log("🏆 Updating products chart:", productsData);
-  
-  if (productsChart) productsChart.destroy();
-  
-  const labels = ['No Data'];
-  const data = [0];
-  
-  productsChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: 'Quantity Sold',
-        data: data,
-        backgroundColor: ['#ff6b6b'],
-        borderWidth: 0
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: { legend: { display: false } },
-      scales: { y: { beginAtZero: true } }
-    }
-  });
-}
-
-// ✅ Update Orders Table
-function updateOrdersTable(orders) {
-  const tbody = document.getElementById("ordersTableBody");
-  const table = document.getElementById("ordersTable");
-  
-  console.log("📦 Updating orders table with:", orders);
-  
-  if (!Array.isArray(orders) || orders.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#666; padding: 20px;">No orders found</td></tr>';
-    if (table) table.style.display = 'table';
-    hideLoading('ordersLoading');
-    console.log("📦 No orders to display");
-    return;
-  }
-  
-  tbody.innerHTML = '';
-  
-  orders.forEach(order => {
-    const tr = document.createElement("tr");
-    
-    let itemsText = 'N/A';
-    try {
-      const items = order.Items ? JSON.parse(order.Items) : [];
-      itemsText = items.map(item => `${item.name} (${item.quantity}x)`).join(', ');
-    } catch (e) {
-      itemsText = order.Items || 'N/A';
-    }
-    
-    const timestamp = order.Timestamp ? new Date(order.Timestamp).toLocaleString() : 'N/A';
-    const status = order.Status || 'pending';
-    const orderId = order.Timestamp || Math.random().toString(36).substr(2, 9);
-    
-    tr.innerHTML = `
-      <td>${timestamp}</td>
-      <td><strong>${order.Name || 'N/A'}</strong></td>
-      <td>${order.Phone || 'N/A'}</td>
-      <td>${order.Table || 'N/A'}</td>
-      <td title="${itemsText}">${itemsText.substring(0, 30)}${itemsText.length > 30 ? '...' : ''}</td>
-      <td><strong>₹${parseFloat(order.Total || 0).toFixed(2)}</strong></td>
-      <td><span class="status-badge status-${status}">${status}</span></td>
-      <td>
-        <button class="invoice-btn" onclick="generateBill('${orderId}')">🧾 Bill</button>
-        <button class="complete-btn" onclick="completeOrder('${orderId}')">✅ Complete</button>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
-  
-  if (table) table.style.display = 'table';
-  hideLoading('ordersLoading');
-  console.log("✅ Orders table updated with", orders.length, "orders");
-}
-
-// ✅ Update Menu Table
-function updateMenuTable(menu) {
-  const tbody = document.getElementById("menuTableBody");
-  const table = document.getElementById("menuTable");
-  
-  console.log("📋 Updating menu table with:", menu);
-  
-  if (!Array.isArray(menu) || menu.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#666; padding: 20px;">No menu items found</td></tr>';
-    if (table) table.style.display = 'table';
-    hideLoading('menuLoading');
-    console.log("📋 No menu items to display");
-    return;
-  }
-  
-  tbody.innerHTML = '';
-  
-  menu.forEach(item => {
-    const tr = document.createElement("tr");
-    
-    const name = item.name || item.Name || 'Unknown Item';
-    const price = parseFloat(item.price || item.Price || 0);
-    const category = item.category || item.Category || 'General';
-    const type = (item.type || item.Type || 'veg').toLowerCase();
-    let imageUrl = item.image || item.Image;
-    
-    if (!imageUrl || imageUrl === '' || imageUrl.includes('undefined')) {
-      imageUrl = 'https://via.placeholder.com/50x50/ff6b6b/white?text=' + encodeURIComponent(name.substring(0, 2).toUpperCase());
-    }
-    
-    tr.innerHTML = `
-      <td><strong>${name}</strong></td>
-      <td>₹${price.toFixed(2)}</td>
-      <td>${category}</td>
-      <td>${type === 'non-veg' ? '🔴' : '🟢'}</td>
-      <td><img src="${imageUrl}" alt="${name}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px;" onerror="this.src='https://via.placeholder.com/50x50/ff6b6b/white?text=IMG'"></td>
-      <td><button class="delete-btn" onclick="deleteMenuItem('${name.replace(/'/g, "\\'")}')">🗑️ Delete</button></td>
-    `;
-    tbody.appendChild(tr);
-  });
-  
-  if (table) table.style.display = 'table';
-  hideLoading('menuLoading');
-  console.log("✅ Menu table updated with", menu.length, "items");
-}
-
-// ✅ Add Menu Item
-async function addMenuItem(event) {
-  event.preventDefault();
-  
-  const name = document.getElementById("itemName").value.trim();
-  const price = document.getElementById("itemPrice").value;
-  const category = document.getElementById("itemCategory").value.trim();
-  const description = document.getElementById("itemDescription").value.trim();
-  const type = document.getElementById("itemType").value;
-  
-  if (!name || !price || !category) {
-    alert("Please fill all required fields");
-    return false;
-  }
-  
-  try {
-    const imageUrl = "https://via.placeholder.com/300x200/ff6b6b/white?text=" + encodeURIComponent(name);
-    const url = `${scriptURL}?action=addProduct&name=${encodeURIComponent(name)}&price=${price}&category=${encodeURIComponent(category)}&description=${encodeURIComponent(description)}&type=${type}&image=${encodeURIComponent(imageUrl)}`;
-    
-    console.log("📤 Adding item:", url);
-    const response = await fetch(url);
-    
-    if (!response.ok) throw new Error('Network response was not ok');
-    
-    const result = await response.json();
-    
-    if (result.status === 'success') {
-      alert('✅ Item added successfully!');
-      event.target.reset();
-      document.getElementById('imagePreview').innerHTML = '<span>Image Preview</span>';
-      loadDashboard();
-    } else {
-      alert('❌ Failed to add item: ' + (result.error || 'Unknown error'));
-    }
-  } catch (error) {
-    console.error('Add item error:', error);
-    alert('❌ Network error adding item: ' + error.message);
-  }
-  
-  return false;
-}
-
-// ✅ Delete Menu Item
-async function deleteMenuItem(itemName) {
-  if (!confirm(`Are you sure you want to delete "${itemName}"?`)) return;
-  
-  try {
-    const response = await fetch(`${scriptURL}?action=deleteProduct&name=${encodeURIComponent(itemName)}`);
-    if (!response.ok) throw new Error('Network response was not ok');
-    
-    const result = await response.json();
-    
-    if (result.status === 'success') {
-      alert('✅ Item deleted successfully!');
-      loadDashboard();
-    } else {
-      alert('❌ Failed to delete item: ' + (result.error || 'Unknown error'));
-    }
-  } catch (error) {
-    console.error('Delete item error:', error);
-    alert('❌ Network error deleting item: ' + error.message);
-  }
-}
-
-// ✅ Generate Bill
-async function generateBill(orderId) {
-  try {
-    console.log("🧾 Generating bill for order:", orderId);
-    const response = await fetch(`${scriptURL}?action=generateBill&orderId=${encodeURIComponent(orderId)}`);
-    
-    if (!response.ok) throw new Error('Network response was not ok');
-    
-    const result = await response.json();
-    
-    if (result.status === 'success') {
-      displayBill(result.bill);
-    } else {
-      alert('❌ Failed to generate bill: ' + (result.error || 'Unknown error'));
-    }
-  } catch (error) {
-    console.error('Generate bill error:', error);
-    alert('❌ Error generating bill: ' + error.message);
-  }
-}
-
-// ✅ Display Bill
-function displayBill(billData) {
-  console.log("📄 Displaying bill:", billData);
-  
-  document.getElementById('billOrderId').textContent = billData.orderId || 'N/A';
-  document.getElementById('billTimestamp').textContent = billData.timestamp ? new Date(billData.timestamp).toLocaleString() : 'N/A';
-  document.getElementById('billCustomerName').textContent = billData.customerName || 'N/A';
-  document.getElementById('billCustomerPhone').textContent = billData.customerPhone || 'N/A';
-  document.getElementById('billTableNumber').textContent = billData.tableNumber || 'N/A';
-  document.getElementById('billStatus').textContent = billData.status || 'pending';
-  document.getElementById('billTotalAmount').textContent = `₹${parseFloat(billData.totalAmount || 0).toFixed(2)}`;
-  
-  const itemsList = document.getElementById('billItemsList');
-  itemsList.innerHTML = '';
-  
-  if (billData.items && Array.isArray(billData.items)) {
-    billData.items.forEach(item => {
-      const itemElement = document.createElement('div');
-      itemElement.className = 'bill-item';
-      itemElement.innerHTML = `
-        <div class="item-name">${item.name || 'Unknown Item'}</div>
-        <div class="item-quantity">${item.quantity || 1}x</div>
-        <div class="item-price">₹${parseFloat(item.price || 0).toFixed(2)}</div>
-      `;
-      itemsList.appendChild(itemElement);
-    });
-  } else {
-    itemsList.innerHTML = '<div class="bill-item"><div class="item-name">No items found</div></div>';
-  }
-  
-  document.getElementById('billModal').style.display = 'block';
-}
-
-// ✅ Close Bill Modal
-function closeBillModal() {
-  document.getElementById('billModal').style.display = 'none';
-}
-
-// ✅ Print Bill
-function printBill() {
-  window.print();
-}
-
-// ✅ Complete Order
-async function completeOrder(orderId) {
-  if (confirm('Mark this order as completed?')) {
-    try {
-      const response = await fetch(`${scriptURL}?action=updateOrderStatus&orderId=${encodeURIComponent(orderId)}&status=completed`);
-      if (!response.ok) throw new Error('Network response was not ok');
-      
-      const result = await response.json();
-      
-      if (result.status === 'success') {
-        alert('✅ Order marked as completed!');
-        loadDashboard();
-      } else {
-        alert('❌ Failed to update order status: ' + (result.error || 'Unknown error'));
-      }
-    } catch (error) {
-      console.error('Complete order error:', error);
-      alert('❌ Error completing order: ' + error.message);
-    }
-  }
-}
-
-// ✅ Image Preview
-function previewImage(input) {
-  const preview = document.getElementById('imagePreview');
-  if (input.files && input.files[0]) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
-    };
-    reader.readAsDataURL(input.files[0]);
-  } else {
-    preview.innerHTML = '<span>Image Preview</span>';
-  }
-}
-
-// ✅ Utility Functions
-function showLoading(elementId, message = 'Loading...') {
-  const element = document.getElementById(elementId);
-  if (element) {
-    element.innerHTML = message;
-    element.style.display = 'block';
-  }
-}
-
-function hideLoading(elementId) {
-  const element = document.getElementById(elementId);
-  if (element) {
-    element.style.display = 'none';
-  }
-}
-
-function showError(elementId, message) {
-  const element = document.getElementById(elementId);
-  if (element) {
-    element.innerHTML = `<div class="error">${message}</div>`;
-    element.style.display = 'block';
-  }
-}
-
-// ✅ Close modal when clicking outside
-window.onclick = function(event) {
-  const modal = document.getElementById('billModal');
-  if (event.target === modal) {
-    closeBillModal();
-  }
-}
-
-// ✅ Run on page load
-document.addEventListener("DOMContentLoaded", function() {
-  console.log("🚀 Admin dashboard initialized");
-  loadDashboard();
+// Initialize Application
+document.addEventListener('DOMContentLoaded', function() {
+    checkAuthentication();
+    initializeCharts();
+    setupEventListeners();
+    updateCurrentTime();
+    setInterval(updateCurrentTime, 60000);
 });
 
-// ✅ Auto-refresh every 30 seconds
-setInterval(loadDashboard, 30000);
+// Authentication Functions
+function checkAuthentication() {
+    const savedUser = localStorage.getItem('adminUser');
+    if (savedUser) {
+        currentUser = JSON.parse(savedUser);
+        showDashboard();
+    } else {
+        showLogin();
+    }
+}
+
+function showLogin() {
+    loginSection.style.display = 'flex';
+    dashboardSection.style.display = 'none';
+}
+
+function showDashboard() {
+    loginSection.style.display = 'none';
+    dashboardSection.style.display = 'block';
+    loadDashboardData();
+}
+
+function logout() {
+    localStorage.removeItem('adminUser');
+    currentUser = null;
+    showLogin();
+    showAlert('Logged out successfully', 'success');
+}
+
+// Login Handler
+async function handleLogin(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(loginForm);
+    const credentials = {
+        username: formData.get('username'),
+        password: formData.get('password')
+    };
+
+    const loginBtn = loginForm.querySelector('button');
+    loginBtn.disabled = true;
+    loginBtn.textContent = 'Logging in...';
+
+    try {
+        const response = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                action: 'adminLogin',
+                ...credentials
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            localStorage.setItem('adminUser', JSON.stringify(data.user));
+            currentUser = data.user;
+            showDashboard();
+            showAlert('Login successful! Welcome back!', 'success');
+        } else {
+            showAlert(data.error || 'Invalid username or password', 'error', loginAlert);
+        }
+    } catch (error) {
+        showAlert('Network error: ' + error.message, 'error', loginAlert);
+    } finally {
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Login';
+    }
+}
+
+// Dashboard Data Loading
+async function loadDashboardData() {
+    try {
+        showLoading('dashboard');
+        
+        // Load all data in parallel
+        const [statsResponse, ordersResponse, productsResponse, salesResponse, topProductsResponse] = await Promise.all([
+            fetch(SCRIPT_URL + '?action=getDashboardStats'),
+            fetch(SCRIPT_URL + '?action=getOrders'),
+            fetch(SCRIPT_URL + '?action=getAllProducts'),
+            fetch(SCRIPT_URL + '?action=getSalesData'),
+            fetch(SCRIPT_URL + '?action=getTopProducts')
+        ]);
+
+        const stats = await statsResponse.json();
+        const ordersData = await ordersResponse.json();
+        const productsData = await productsResponse.json();
+        const salesData = await salesResponse.json();
+        const topProducts = await topProductsResponse.json();
+
+        // Update dashboard stats
+        updateDashboardStats(stats);
+        
+        // Update global state
+        allOrders = ordersData.orders || [];
+        allProducts = productsData.products || [];
+        
+        // Render data
+        renderOrdersTable(allOrders);
+        renderProductsTable(allProducts);
+        updateCharts(salesData, topProducts);
+        
+        hideLoading('dashboard');
+        
+    } catch (error) {
+        console.error('Dashboard load error:', error);
+        showAlert('Failed to load dashboard data', 'error');
+        hideLoading('dashboard');
+    }
+}
+
+function updateDashboardStats(stats) {
+    document.getElementById('totalOrders').textContent = stats.totalOrders || 0;
+    document.getElementById('totalSales').textContent = '₹' + (stats.totalSales || 0);
+    document.getElementById('todayOrders').textContent = stats.todayOrders || 0;
+    document.getElementById('pendingOrders').textContent = stats.pendingOrders || 0;
+}
+
+// Orders Management
+function renderOrdersTable(orders) {
+    const tbody = document.getElementById('ordersTableBody');
+    
+    if (!orders || orders.length === 0) {
+        document.getElementById('ordersTable').style.display = 'none';
+        document.getElementById('ordersLoading').innerHTML = '<p>No orders found</p>';
+        return;
+    }
+
+    const ordersHtml = orders.map(order => {
+        const orderDate = new Date(order.Timestamp || order.Date).toLocaleString();
+        const items = parseOrderItems(order.Items);
+        const totalAmount = order.Total || calculateOrderTotal(items);
+        
+        return `
+            <tr>
+                <td>${orderDate}</td>
+                <td><strong>${order.Name || 'N/A'}</strong></td>
+                <td>${order.Phone || 'N/A'}</td>
+                <td>${order.Table || 'N/A'}</td>
+                <td>
+                    <div style="max-width: 200px;">
+                        ${items.map(item => `
+                            <div style="font-size: 12px; color: #666;">
+                                ${item.quantity}x ${item.name} - ₹${item.price * item.quantity}
+                            </div>
+                        `).join('')}
+                    </div>
+                </td>
+                <td><strong>₹${totalAmount}</strong></td>
+                <td>
+                    <span class="status-badge status-${order.Status || 'pending'}">
+                        ${order.Status || 'pending'}
+                    </span>
+                </td>
+                <td>
+                    <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                        <button class="invoice-btn" onclick="generateBill('${order.Timestamp || order.Date}')">
+                            🧾 Bill
+                        </button>
+                        ${order.Status !== 'completed' ? `
+                            <button class="complete-btn" onclick="updateOrderStatus('${order.Timestamp || order.Date}', 'completed')">
+                                ✅ Complete
+                            </button>
+                        ` : ''}
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    tbody.innerHTML = ordersHtml;
+    document.getElementById('ordersLoading').style.display = 'none';
+    document.getElementById('ordersTable').style.display = 'table';
+}
+
+function parseOrderItems(itemsJson) {
+    try {
+        if (typeof itemsJson === 'string') {
+            return JSON.parse(itemsJson);
+        }
+        return itemsJson || [];
+    } catch (e) {
+        console.error('Error parsing order items:', e);
+        return [];
+    }
+}
+
+function calculateOrderTotal(items) {
+    return items.reduce((total, item) => total + (item.price * item.quantity), 0);
+}
+
+// Products Management
+function renderProductsTable(products) {
+    const tbody = document.getElementById('menuTableBody');
+    
+    if (!products || products.length === 0) {
+        document.getElementById('menuTable').style.display = 'none';
+        document.getElementById('menuLoading').innerHTML = '<p>No products found</p>';
+        return;
+    }
+
+    const productsHtml = products.map(product => `
+        <tr>
+            <td>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <img src="${product.image || 'https://via.placeholder.com/50x50?text=No+Image'}" 
+                         alt="${product.name}" 
+                         style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;">
+                    <div>
+                        <strong>${product.name}</strong>
+                        ${product.description ? `<div style="font-size: 12px; color: #666;">${product.description}</div>` : ''}
+                    </div>
+                </div>
+            </td>
+            <td><strong>₹${product.price}</strong></td>
+            <td>
+                <img src="${product.image || 'https://via.placeholder.com/50x50?text=No+Image'}" 
+                     alt="${product.name}" 
+                     style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;">
+            </td>
+            <td>${product.category}</td>
+            <td>
+                <span style="color: ${product.type === 'veg' ? 'green' : 'red'}; font-weight: bold;">
+                    ${product.type === 'veg' ? '🟢 Veg' : '🔴 Non-Veg'}
+                </span>
+            </td>
+            <td>
+                <div style="display: flex; gap: 5px;">
+                    <button class="complete-btn" onclick="editProduct('${product.name}')">
+                        ✏️ Edit
+                    </button>
+                    <button class="delete-btn" onclick="deleteProduct('${product.name}')">
+                        🗑️ Delete
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+
+    tbody.innerHTML = productsHtml;
+    document.getElementById('menuLoading').style.display = 'none';
+    document.getElementById('menuTable').style.display = 'table';
+}
+
+// Add Product Function
+async function addMenuItem(e) {
+    e.preventDefault();
+    
+    const form = e.target;
+    const formData = new FormData(form);
+    
+    const productData = {
+        name: formData.get('itemName'),
+        price: parseFloat(formData.get('itemPrice')),
+        category: formData.get('itemCategory'),
+        type: formData.get('itemType'),
+        description: formData.get('itemDescription'),
+        image: document.getElementById('imagePreview').querySelector('img')?.src || ''
+    };
+
+    const submitBtn = form.querySelector('button');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Adding...';
+
+    try {
+        const response = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                action: 'addProduct',
+                ...productData
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showAlert('Product added successfully!', 'success');
+            form.reset();
+            resetImagePreview();
+            loadDashboardData(); // Reload to show new product
+        } else {
+            showAlert(data.error || 'Failed to add product', 'error');
+        }
+    } catch (error) {
+        showAlert('Network error: ' + error.message, 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '➕ Add Item';
+    }
+}
+
+// Edit Product Function
+function editProduct(productName) {
+    const product = allProducts.find(p => p.name === productName);
+    if (!product) {
+        showAlert('Product not found', 'error');
+        return;
+    }
+
+    // Populate edit form (you'll need to create an edit modal)
+    document.getElementById('editItemName').value = product.name;
+    document.getElementById('editItemPrice').value = product.price;
+    document.getElementById('editItemCategory').value = product.category;
+    document.getElementById('editItemType').value = product.type;
+    document.getElementById('editItemDescription').value = product.description || '';
+    
+    const editImagePreview = document.getElementById('editImagePreview');
+    if (product.image) {
+        editImagePreview.innerHTML = `<img src="${product.image}" alt="Preview">`;
+    }
+    
+    // Show edit modal
+    showModal('editProductModal');
+}
+
+async function updateProduct(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const productData = {
+        oldName: document.getElementById('editItemName').value,
+        name: formData.get('itemName'),
+        price: parseFloat(formData.get('itemPrice')),
+        category: formData.get('itemCategory'),
+        type: formData.get('itemType'),
+        description: formData.get('itemDescription'),
+        image: document.getElementById('editImagePreview').querySelector('img')?.src || ''
+    };
+
+    try {
+        const response = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                action: 'updateProduct',
+                ...productData
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showAlert('Product updated successfully!', 'success');
+            closeModal('editProductModal');
+            loadDashboardData();
+        } else {
+            showAlert(data.error || 'Failed to update product', 'error');
+        }
+    } catch (error) {
+        showAlert('Network error: ' + error.message, 'error');
+    }
+}
+
+// Delete Product Function
+async function deleteProduct(productName) {
+    if (!confirm(`Are you sure you want to delete "${productName}"? This action cannot be undone.`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch(SCRIPT_URL + '?action=deleteProduct&name=' + encodeURIComponent(productName));
+        const data = await response.json();
+
+        if (data.success) {
+            showAlert('Product deleted successfully!', 'success');
+            loadDashboardData();
+        } else {
+            showAlert(data.error || 'Failed to delete product', 'error');
+        }
+    } catch (error) {
+        showAlert('Network error: ' + error.message, 'error');
+    }
+}
+
+// Order Status Management
+async function updateOrderStatus(orderId, status) {
+    try {
+        const response = await fetch(SCRIPT_URL + `?action=updateOrderStatus&orderId=${encodeURIComponent(orderId)}&status=${status}`);
+        const data = await response.json();
+
+        if (data.success) {
+            showAlert(`Order marked as ${status}!`, 'success');
+            loadDashboardData();
+        } else {
+            showAlert(data.error || 'Failed to update order status', 'error');
+        }
+    } catch (error) {
+        showAlert('Network error: ' + error.message, 'error');
+    }
+}
+
+// Bill Generation
+async function generateBill(orderId) {
+    try {
+        const response = await fetch(SCRIPT_URL + `?action=generateBill&orderId=${encodeURIComponent(orderId)}`);
+        const data = await response.json();
+
+        if (data.success) {
+            renderBill(data.bill);
+            showModal('billModal');
+        } else {
+            showAlert(data.error || 'Failed to generate bill', 'error');
+        }
+    } catch (error) {
+        showAlert('Network error: ' + error.message, 'error');
+    }
+}
+
+function renderBill(bill) {
+    const billContent = document.getElementById('billContent');
+    const items = bill.items || [];
+    const total = bill.totalAmount || calculateOrderTotal(items);
+    
+    const billHtml = `
+        <div class="bill-header">
+            <h2>Yadava's Ice Cream</h2>
+            <p>Delicious & Fresh</p>
+        </div>
+        
+        <div class="bill-info">
+            <div class="bill-info-item">
+                <strong>Order ID:</strong>
+                <span>${bill.orderId || 'N/A'}</span>
+            </div>
+            <div class="bill-info-item">
+                <strong>Date & Time:</strong>
+                <span>${new Date(bill.timestamp).toLocaleString()}</span>
+            </div>
+            <div class="bill-info-item">
+                <strong>Customer Name:</strong>
+                <span>${bill.customerName || 'N/A'}</span>
+            </div>
+            <div class="bill-info-item">
+                <strong>Phone:</strong>
+                <span>${bill.customerPhone || 'N/A'}</span>
+            </div>
+            <div class="bill-info-item">
+                <strong>Table No:</strong>
+                <span>${bill.tableNumber || 'N/A'}</span>
+            </div>
+        </div>
+
+        <div class="bill-items">
+            <h4>Order Items:</h4>
+            ${items.map(item => `
+                <div class="bill-item">
+                    <span class="item-name">${item.name}</span>
+                    <span class="item-quantity">${item.quantity} x ₹${item.price}</span>
+                    <span class="item-price">₹${item.price * item.quantity}</span>
+                </div>
+            `).join('')}
+        </div>
+
+        <div class="bill-total">
+            <h3>TOTAL AMOUNT</h3>
+            <div class="amount">₹${total}</div>
+        </div>
+
+        ${bill.review && bill.review !== 'No note' ? `
+            <div class="bill-info-item" style="margin-top: 15px;">
+                <strong>Special Instructions:</strong>
+                <span>${bill.review}</span>
+            </div>
+        ` : ''}
+
+        <div class="bill-actions">
+            <button class="print-btn" onclick="printBill()">🖨️ Print Bill</button>
+        </div>
+    `;
+
+    billContent.innerHTML = billHtml;
+}
+
+function printBill() {
+    window.print();
+}
+
+function closeBillModal() {
+    closeModal('billModal');
+}
+
+// Image Preview Function
+function previewImage(input) {
+    const preview = document.getElementById('imagePreview');
+    
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+        }
+        
+        reader.readAsDataURL(input.files[0]);
+    } else {
+        resetImagePreview();
+    }
+}
+
+function resetImagePreview() {
+    const preview = document.getElementById('imagePreview');
+    preview.innerHTML = '<span>Image Preview</span>';
+}
+
+// Chart Functions
+function initializeCharts() {
+    const salesCtx = document.getElementById('salesChart').getContext('2d');
+    const productsCtx = document.getElementById('productsChart').getContext('2d');
+    
+    salesChart = new Chart(salesCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Daily Sales (₹)',
+                data: [],
+                borderColor: '#ff6b6b',
+                backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0,0,0,0.1)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+
+    productsChart = new Chart(productsCtx, {
+        type: 'bar',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Orders',
+                data: [],
+                backgroundColor: '#ff8e8e',
+                borderColor: '#ff6b6b',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0,0,0,0.1)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+}
+
+function updateCharts(salesData, topProducts) {
+    // Update sales chart
+    if (salesChart && salesData && salesData.length > 0) {
+        salesChart.data.labels = salesData.map(item => {
+            const date = new Date(item.date);
+            return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+        });
+        salesChart.data.datasets[0].data = salesData.map(item => item.sales);
+        salesChart.update();
+    }
+
+    // Update products chart
+    if (productsChart && topProducts && topProducts.length > 0) {
+        const top5 = topProducts.slice(0, 5);
+        productsChart.data.labels = top5.map(item => {
+            // Shorten long product names
+            return item.name.length > 15 ? item.name.substring(0, 15) + '...' : item.name;
+        });
+        productsChart.data.datasets[0].data = top5.map(item => item.count);
+        productsChart.update();
+    }
+}
+
+// Utility Functions
+function setupEventListeners() {
+    // Login form
+    if (loginForm) {
+        loginForm.addEventListener('submit', handleLogin);
+    }
+    
+    // Add product form
+    const addProductForm = document.querySelector('.menu-form');
+    if (addProductForm) {
+        addProductForm.addEventListener('submit', addMenuItem);
+    }
+    
+    // Edit product form
+    const editProductForm = document.getElementById('editProductForm');
+    if (editProductForm) {
+        editProductForm.addEventListener('submit', updateProduct);
+    }
+}
+
+function showLoading(section) {
+    const loadingElement = document.getElementById(section + 'Loading');
+    if (loadingElement) {
+        loadingElement.style.display = 'block';
+        loadingElement.innerHTML = '<div class="loading">Loading...</div>';
+    }
+}
+
+function hideLoading(section) {
+    const loadingElement = document.getElementById(section + 'Loading');
+    if (loadingElement) {
+        loadingElement.style.display = 'none';
+    }
+}
+
+function showAlert(message, type = 'info', container = null) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type}`;
+    alertDiv.innerHTML = `
+        <div style="padding: 12px; border-radius: 8px; margin: 10px 0; 
+                    background: ${type === 'success' ? '#d4edda' : type === 'error' ? '#f8d7da' : '#d1ecf1'}; 
+                    color: ${type === 'success' ? '#155724' : type === 'error' ? '#721c24' : '#0c5460'}; 
+                    border: 1px solid ${type === 'success' ? '#c3e6cb' : type === 'error' ? '#f5c6cb' : '#bee5eb'};">
+            <strong>${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'}</strong> ${message}
+        </div>
+    `;
+    
+    const targetContainer = container || document.body;
+    targetContainer.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+
+function showModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'block';
+    }
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+function updateCurrentTime() {
+    const timeElement = document.getElementById('currentTime');
+    if (timeElement) {
+        timeElement.textContent = new Date().toLocaleString('en-IN', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+    }
+}
+
+// Global refresh function
+function loadDashboard() {
+    loadDashboardData();
+    showAlert('Dashboard refreshed!', 'success');
+}
+
+// Make functions globally available
+window.handleLogin = handleLogin;
+window.addMenuItem = addMenuItem;
+window.updateProduct = updateProduct;
+window.deleteProduct = deleteProduct;
+window.updateOrderStatus = updateOrderStatus;
+window.generateBill = generateBill;
+window.printBill = printBill;
+window.closeBillModal = closeBillModal;
+window.previewImage = previewImage;
+window.loadDashboard = loadDashboard;
+window.logout = logout;
+window.editProduct = editProduct;
