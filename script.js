@@ -1,17 +1,6 @@
-// =======================
-// Optimized script.js for Barf Malai / Go Digital
-// Features:
-// - JSONP fetch (menu + order submission)
-// - Local cache for menu (localStorage)
-// - Splash / logo welcome screen
-// - Cart persistence (localStorage)
-// - Category grid + dropdown sync
-// - Robust error handling and timeouts
-// - Admin-ready hooks (menuVersion, mode param support)
-// =======================
-
 // ---------- CONFIG ----------
 const SHEET_URL = "https://script.google.com/macros/s/AKfycbyYXyDhUbqdhau8XeDdKbKzvsyNJEJ0gL7h2ucTgjZ_cJrxdG6ZkAp-f0ecL7yWDdw/exec";
+
 const MENU_CACHE_KEY = "gd_menu_cache_v1";
 const CART_CACHE_KEY = "gd_cart_cache_v1";
 const MENU_CACHE_TS = "gd_menu_cache_ts";
@@ -130,14 +119,13 @@ async function loadMenu() {
 
   // 2) Always try to fetch fresh
   try {
-    // use action param for clarity (your Apps Script supports action)
-    const resp = await jsonpFetch(SHEET_URL + (SHEET_URL.includes("?") ? "&" : "?") + "action=getMenu");
-    // resp may be {status:'success', menu: [...]} or direct array
+    const resp = await jsonpFetch(SHEET_URL + "?action=getMenu");
     let fresh = [];
     if (!resp) throw new Error("Empty response");
     if (Array.isArray(resp)) fresh = resp;
     else if (resp.menu && Array.isArray(resp.menu)) fresh = resp.menu;
     else if (resp.status === "success" && Array.isArray(resp.menu)) fresh = resp.menu;
+    
     if (fresh && fresh.length) {
       const freshStr = JSON.stringify(fresh);
       const oldStr = localStorage.getItem(MENU_CACHE_KEY);
@@ -150,7 +138,6 @@ async function loadMenu() {
         if (oldStr) showToast("Menu updated ✅");
       }
     } else {
-      // if no items in fresh and no cached, show empty
       if (!menuData || menuData.length === 0) showMenuError("Menu empty.");
     }
   } catch (err) {
@@ -247,7 +234,6 @@ function setupCategories(data) {
   categoryGrid.appendChild(f);
   const first = categoryGrid.querySelector(".category-item");
   if (first) first.classList.add("active");
-  // also sync dropdown
   populateCategories(data);
 }
 function getCategoryIcon(cat) {
@@ -367,21 +353,22 @@ function updateCart() {
   if (cartCount) cartCount.textContent = count;
 }
 
-// ---------- Place order (JSONP submit) ----------
+// ---------- FIXED: Place order with proper mobile number ----------
 function placeOrder() {
   const name = document.getElementById("userName")?.value.trim();
-  const phone = document.getElementById("userPhone")?.value.trim();
+  const phone = document.getElementById("phone")?.value.trim(); // ✅ Fixed: using correct ID
   const email = document.getElementById("userEmail")?.value.trim();
   const table = document.getElementById("userTable")?.value.trim() || "N/A";
   const note = document.getElementById("userNote")?.value.trim() || "No note";
 
   if (!name) { alert("❌ Please enter your name"); return; }
+  if (!phone) { alert("❌ Please enter your phone number"); return; } // ✅ Added phone validation
   if (cart.length === 0) { alert("❌ Please add items to your cart"); return; }
 
   const orderData = {
     name: name,
     email: email,
-    phone: phone, // ✅ This was missing
+    phone: phone, // ✅ This will now be properly sent
     table: table,
     review: note,
     cart: cart.map(item => ({ 
@@ -391,6 +378,8 @@ function placeOrder() {
     })),
     totalAmount: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
   };
+
+  console.log("📦 Sending order data:", orderData);
 
   placeOrderBtn.disabled = true;
   placeOrderBtn.innerText = "Placing...";
@@ -402,17 +391,27 @@ function placeOrder() {
     if (s.parentNode) s.parentNode.removeChild(s);
     placeOrderBtn.disabled = false;
     placeOrderBtn.innerText = "Place Order";
+    
     if (resp && resp.success) {
       showToast("Order placed ✅");
-      cart = []; saveCartToCache(); updateCart();
+      cart = []; 
+      saveCartToCache(); 
+      updateCart();
       displayMenu(getFilteredMenu());
-      const fEls = ["userName","userPhone","userEmail","userTable","userNote"];
-      fEls.forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+      
+      // Clear form
+      const fEls = ["userName","phone","userEmail","userTable","userNote"];
+      fEls.forEach(id => { 
+        const el = document.getElementById(id); 
+        if (el) el.value = ""; 
+      });
+      
       if (cartPanel) cartPanel.classList.remove("active");
     } else {
       alert("❌ " + (resp?.error || "Failed to place order"));
     }
   };
+  
   s.onerror = function() {
     delete window[cb];
     if (s.parentNode) s.parentNode.removeChild(s);
@@ -440,10 +439,10 @@ if (placeOrderBtn) placeOrderBtn.addEventListener("click", placeOrder);
 // ---------- Init ----------
 document.addEventListener("DOMContentLoaded", () => {
   createSplash();
-  // load cart from cache
   loadCartFromCache();
   updateCart();
-  // try to show cached menu quickly
+  
+  // Try to show cached menu quickly
   try {
     const c = localStorage.getItem(MENU_CACHE_KEY);
     if (c) {
@@ -455,9 +454,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
   } catch(e){ /* ignore */ }
+  
   loadMenu().catch(err => console.error("Menu load failed", err));
 });
-
-
-
-
