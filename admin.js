@@ -1,7 +1,7 @@
 // =============================================
-// ✅ SCRIPT_URL - TEST KARNE KE LIYE
+// ✅ SCRIPT_URL - YEH UPDATE KARO APNE NEW URL SE
 // =============================================
-// Pehle test karo, agar kaam kare toh yeh use karo
+// Tumhara naya URL yahan paste karo
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxIMrO5EA7bHI65V7dFWk1kurvPyg17FONldTnWNc25KdrVo2GdSdMh78u0sC4YL-QG/exec';
 
 // =============================================
@@ -13,54 +13,45 @@ let salesChart = null;
 let productsChart = null;
 
 // =============================================
-// ✅ BETTER JSONP HELPER WITH DEBUGGING
+// ✅ IMPROVED JSONP HELPER
 // =============================================
 function jsonpRequest(url) {
     return new Promise((resolve, reject) => {
-        const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
+        const callbackName = 'cb_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
         
-        console.log('🔧 Making JSONP request to:', url);
+        console.log('🔄 Making request to:', url);
         
         const script = document.createElement('script');
         script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + callbackName;
         
         window[callbackName] = function(data) {
-            console.log('✅ JSONP Response received:', data);
+            console.log('✅ Response received:', data);
+            cleanup();
+            resolve(data);
+        };
+        
+        function cleanup() {
             delete window[callbackName];
             if (script.parentNode) {
                 script.parentNode.removeChild(script);
             }
-            
-            if (data && data.status === 'error') {
-                reject(new Error(data.error || 'Server error'));
-            } else {
-                resolve(data);
-            }
-        };
+        }
         
         script.onerror = function() {
-            console.error('❌ JSONP Script load failed for URL:', url);
-            delete window[callbackName];
-            if (script.parentNode) {
-                script.parentNode.removeChild(script);
-            }
-            reject(new Error('Network error - Cannot connect to server. Check: 1) Script URL 2) Deployment 3) Internet'));
+            console.error('❌ Script load failed');
+            cleanup();
+            reject(new Error('Connection failed. Please check: 1) Script URL 2) Deployment 3) Internet connection'));
         };
         
-        // Timeout after 15 seconds
         setTimeout(() => {
             if (window[callbackName]) {
-                console.error('❌ JSONP Timeout for URL:', url);
-                delete window[callbackName];
-                if (script.parentNode) {
-                    script.parentNode.removeChild(script);
-                }
-                reject(new Error('Request timeout - Server not responding'));
+                console.error('⏰ Request timeout');
+                cleanup();
+                reject(new Error('Request timeout. Server is not responding.'));
             }
         }, 15000);
         
         document.head.appendChild(script);
-        console.log('📤 JSONP Script injected:', script.src);
     });
 }
 
@@ -69,17 +60,21 @@ function jsonpRequest(url) {
 // =============================================
 async function testConnection() {
     try {
-        console.log('🔧 Testing connection to:', SCRIPT_URL);
         showAlert('Testing connection to server...', 'info');
+        console.log('🔧 Testing connection...');
         
         const result = await jsonpRequest(SCRIPT_URL + '?action=testConnection');
-        console.log('✅ Connection test successful:', result);
         
-        showAlert('✅ Server connection successful!', 'success');
-        return true;
+        if (result.status === 'success') {
+            console.log('✅ Connection successful:', result);
+            showAlert('✅ ' + result.message, 'success');
+            return true;
+        } else {
+            throw new Error(result.error || 'Connection failed');
+        }
     } catch (error) {
         console.error('❌ Connection test failed:', error);
-        showAlert(`❌ Connection failed: ${error.message}`, 'error');
+        showAlert('❌ ' + error.message, 'error');
         return false;
     }
 }
@@ -88,21 +83,22 @@ async function testConnection() {
 // UTILITY FUNCTIONS
 // =============================================
 function showLoading(section) {
-    const loadingElement = document.getElementById(section + 'Loading');
-    if (loadingElement) {
-        loadingElement.style.display = 'block';
-        loadingElement.innerHTML = '<div class="loading">Loading ' + section + '...</div>';
+    const element = document.getElementById(section + 'Loading');
+    if (element) {
+        element.style.display = 'block';
+        element.innerHTML = '<div class="loading">Loading ' + section + '...</div>';
     }
 }
 
 function hideLoading(section) {
-    const loadingElement = document.getElementById(section + 'Loading');
-    if (loadingElement) {
-        loadingElement.style.display = 'none';
-    }
+    const element = document.getElementById(section + 'Loading');
+    if (element) element.style.display = 'none';
 }
 
 function showAlert(message, type = 'info') {
+    // Remove existing alerts
+    document.querySelectorAll('.alert').forEach(alert => alert.remove());
+    
     const alertDiv = document.createElement('div');
     alertDiv.className = `alert alert-${type}`;
     alertDiv.innerHTML = `
@@ -114,40 +110,27 @@ function showAlert(message, type = 'info') {
         </div>
     `;
     
-    document.body.appendChild(alertDiv);
+    document.body.insertBefore(alertDiv, document.body.firstChild);
     
     setTimeout(() => {
-        if (alertDiv.parentNode) {
-            alertDiv.parentNode.removeChild(alertDiv);
-        }
+        if (alertDiv.parentNode) alertDiv.parentNode.removeChild(alertDiv);
     }, 5000);
 }
 
 function showModal(modalId) {
     const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.style.display = 'block';
-    }
+    if (modal) modal.style.display = 'block';
 }
 
 function closeModal(modalId) {
     const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.style.display = 'none';
-    }
+    if (modal) modal.style.display = 'none';
 }
 
 function updateCurrentTime() {
-    const timeElement = document.getElementById('currentTime');
-    if (timeElement) {
-        timeElement.textContent = new Date().toLocaleString('en-IN', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+    const element = document.getElementById('currentTime');
+    if (element) {
+        element.textContent = new Date().toLocaleString('en-IN');
     }
 }
 
@@ -155,13 +138,10 @@ function updateCurrentTime() {
 // ✅ DASHBOARD FUNCTIONS
 // =============================================
 function showDashboard() {
-    const loginSection = document.getElementById('loginSection');
     const dashboardSection = document.getElementById('dashboardSection');
-    
-    if (loginSection) loginSection.style.display = 'none';
     if (dashboardSection) dashboardSection.style.display = 'block';
     
-    // Pehle connection test karo
+    // Test connection first
     testConnection().then(success => {
         if (success) {
             loadDashboardData();
@@ -190,41 +170,15 @@ function parseOrderItems(itemsJson) {
         if (typeof itemsJson === 'string') {
             try {
                 const parsed = JSON.parse(itemsJson);
-                if (Array.isArray(parsed)) {
-                    return parsed.map(item => ({
-                        name: item.name || 'Item',
-                        price: parseFloat(item.price) || 0,
-                        quantity: parseInt(item.quantity) || 1
-                    }));
-                }
+                return Array.isArray(parsed) ? parsed : [];
             } catch (e) {
-                const numericValue = parseFloat(itemsJson);
-                if (!isNaN(numericValue)) {
-                    return [{
-                        name: 'Order Total',
-                        price: numericValue,
-                        quantity: 1
-                    }];
-                }
-                return [{
-                    name: itemsJson,
-                    price: 0,
-                    quantity: 1
-                }];
+                const num = parseFloat(itemsJson);
+                return !isNaN(num) ? [{ name: 'Order Total', price: num, quantity: 1 }] : [];
             }
         }
         
-        if (Array.isArray(itemsJson)) {
-            return itemsJson.map(item => ({
-                name: item.name || 'Item',
-                price: parseFloat(item.price) || 0,
-                quantity: parseInt(item.quantity) || 1
-            }));
-        }
-        
-        return [];
+        return Array.isArray(itemsJson) ? itemsJson : [];
     } catch (e) {
-        console.error('Parse items error:', e);
         return [];
     }
 }
@@ -235,28 +189,22 @@ function calculateOrderTotal(items) {
 
 function renderOrdersTable(orders) {
     const tbody = document.getElementById('ordersTableBody');
-    const ordersTable = document.getElementById('ordersTable');
-    const ordersLoading = document.getElementById('ordersLoading');
+    const table = document.getElementById('ordersTable');
+    const loading = document.getElementById('ordersLoading');
     
-    if (!tbody || !ordersTable || !ordersLoading) return;
+    if (!tbody || !table || !loading) return;
     
     if (!orders || orders.length === 0) {
-        ordersTable.style.display = 'none';
-        ordersLoading.innerHTML = '<div class="loading">No orders found</div>';
-        ordersLoading.style.display = 'block';
+        table.style.display = 'none';
+        loading.innerHTML = '<div class="loading">No orders found</div>';
+        loading.style.display = 'block';
         return;
     }
 
-    const ordersHtml = orders.map(order => {
-        let orderDate;
-        try {
-            orderDate = new Date(order.Timestamp || order.Date || order.timestamp).toLocaleString('en-IN');
-        } catch (e) {
-            orderDate = 'Invalid Date';
-        }
-        
+    const html = orders.map(order => {
+        const orderDate = new Date(order.Timestamp || order.Date || order.timestamp).toLocaleString('en-IN');
         const items = parseOrderItems(order.Items || order.items);
-        const totalAmount = order.Total || order.totalAmount || calculateOrderTotal(items);
+        const total = order.Total || order.totalAmount || calculateOrderTotal(items);
         const status = order.Status || order.status || 'pending';
         const orderId = order.Timestamp || order.timestamp || order.Date;
         
@@ -275,17 +223,13 @@ function renderOrdersTable(orders) {
                         `).join('')}
                     </div>
                 </td>
-                <td><strong>₹${parseFloat(totalAmount).toFixed(2)}</strong></td>
+                <td><strong>₹${parseFloat(total).toFixed(2)}</strong></td>
                 <td>
-                    <span class="status-badge status-${status}">
-                        ${status}
-                    </span>
+                    <span class="status-badge status-${status}">${status}</span>
                 </td>
                 <td>
                     <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-                        <button class="invoice-btn" onclick="generateBill('${orderId}')">
-                            🧾 Bill
-                        </button>
+                        <button class="invoice-btn" onclick="generateBill('${orderId}')">🧾 Bill</button>
                         ${status !== 'completed' ? `
                             <button class="complete-btn" onclick="updateOrderStatus('${orderId}', 'completed')">
                                 ✅ Complete
@@ -297,31 +241,30 @@ function renderOrdersTable(orders) {
         `;
     }).join('');
 
-    tbody.innerHTML = ordersHtml;
-    ordersLoading.style.display = 'none';
-    ordersTable.style.display = 'table';
+    tbody.innerHTML = html;
+    loading.style.display = 'none';
+    table.style.display = 'table';
 }
 
 function renderProductsTable(products) {
     const tbody = document.getElementById('menuTableBody');
-    const menuTable = document.getElementById('menuTable');
-    const menuLoading = document.getElementById('menuLoading');
+    const table = document.getElementById('menuTable');
+    const loading = document.getElementById('menuLoading');
     
-    if (!tbody || !menuTable || !menuLoading) return;
+    if (!tbody || !table || !loading) return;
     
     if (!products || products.length === 0) {
-        menuTable.style.display = 'none';
-        menuLoading.innerHTML = '<div class="loading">No products found</div>';
-        menuLoading.style.display = 'block';
+        table.style.display = 'none';
+        loading.innerHTML = '<div class="loading">No products found</div>';
+        loading.style.display = 'block';
         return;
     }
 
-    const productsHtml = products.map(product => `
+    const html = products.map(product => `
         <tr>
             <td>
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <img src="${product.image || 'https://via.placeholder.com/50x50?text=No+Image'}" 
-                         alt="${product.name}" 
                          style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;">
                     <div>
                         <strong>${product.name}</strong>
@@ -332,73 +275,64 @@ function renderProductsTable(products) {
             <td><strong>₹${product.price}</strong></td>
             <td>
                 <img src="${product.image || 'https://via.placeholder.com/50x50?text=No+Image'}" 
-                     alt="${product.name}" 
                      style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;">
             </td>
             <td>${product.category}</td>
             <td>
-                <span style="color: ${product.type === 'veg' ? 'green' : 'red'}; font-weight: bold;">
+                <span style="color: ${product.type === 'veg' ? 'green' : 'red'};">
                     ${product.type === 'veg' ? '🟢 Veg' : '🔴 Non-Veg'}
                 </span>
             </td>
             <td>
                 <div style="display: flex; gap: 5px;">
-                    <button class="complete-btn" onclick="editProduct('${product.name}')">
-                        ✏️ Edit
-                    </button>
-                    <button class="delete-btn" onclick="deleteProduct('${product.name}')">
-                        🗑️ Delete
-                    </button>
+                    <button class="complete-btn" onclick="editProduct('${product.name}')">✏️ Edit</button>
+                    <button class="delete-btn" onclick="deleteProduct('${product.name}')">🗑️ Delete</button>
                 </div>
             </td>
         </tr>
     `).join('');
 
-    tbody.innerHTML = productsHtml;
-    menuLoading.style.display = 'none';
-    menuTable.style.display = 'table';
+    tbody.innerHTML = html;
+    loading.style.display = 'none';
+    table.style.display = 'table';
 }
 
 async function loadDashboardData() {
     try {
         showLoading('dashboard');
         
-        console.log('🚀 Loading dashboard data...');
+        console.log('📊 Loading dashboard data...');
         
-        // Load all data
         const [stats, ordersData, productsData] = await Promise.all([
             jsonpRequest(SCRIPT_URL + '?action=getDashboardStats'),
             jsonpRequest(SCRIPT_URL + '?action=getOrders'),
             jsonpRequest(SCRIPT_URL + '?action=getAllProducts')
         ]);
 
-        console.log('✅ Data loaded successfully:', {
+        console.log('✅ Data loaded:', {
             stats: stats,
-            orders: ordersData.orders?.length || 0,
-            products: productsData.products?.length || 0
+            orders: ordersData.orders?.length,
+            products: productsData.products?.length
         });
 
-        // Update UI
+        // Update UI with REAL data
         updateDashboardStats(stats);
         allOrders = ordersData.orders || [];
         allProducts = productsData.products || [];
         
         renderOrdersTable(allOrders);
         renderProductsTable(allProducts);
+        updateChartsWithRealData(allOrders); // ✅ REAL DATA CHARTS
         
         hideLoading('dashboard');
         
-        if (allOrders.length > 0 || allProducts.length > 0) {
-            showAlert(`✅ Dashboard loaded! Orders: ${allOrders.length}, Products: ${allProducts.length}`, 'success');
-        } else {
-            showAlert('ℹ️ Dashboard loaded but no data found.', 'info');
-        }
+        const orderCount = allOrders.length;
+        const productCount = allProducts.length;
+        showAlert(`✅ Dashboard loaded! ${orderCount} orders, ${productCount} products`, 'success');
         
     } catch (error) {
         console.error('❌ Dashboard load error:', error);
-        
-        let errorMessage = 'Failed to load data: ' + error.message;
-        showAlert(errorMessage, 'error');
+        showAlert('❌ ' + error.message, 'error');
         
         // Show empty state
         updateDashboardStats({ totalOrders: 0, totalSales: 0, todayOrders: 0, pendingOrders: 0 });
@@ -410,60 +344,127 @@ async function loadDashboardData() {
 }
 
 // =============================================
-// CHART FUNCTIONS
+// ✅ REAL-TIME CHARTS WITH REAL DATA
 // =============================================
 function initializeCharts() {
     const salesCanvas = document.getElementById('salesChart');
     const productsCanvas = document.getElementById('productsChart');
     
     if (salesCanvas) {
-        const salesCtx = salesCanvas.getContext('2d');
-        salesChart = new Chart(salesCtx, {
+        const ctx = salesCanvas.getContext('2d');
+        salesChart = new Chart(ctx, {
             type: 'line',
-            data: {
-                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                datasets: [{
-                    label: 'Daily Sales (₹)',
-                    data: [1200, 1900, 1500, 2000, 1800, 2500, 2200],
-                    borderColor: '#ff6b6b',
-                    backgroundColor: 'rgba(255, 107, 107, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }]
-            },
+            data: { labels: [], datasets: [{
+                label: 'Sales (₹)',
+                data: [],
+                borderColor: '#ff6b6b',
+                backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]},
             options: {
                 responsive: true,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                }
+                plugins: { legend: { display: false } }
             }
         });
     }
 
     if (productsCanvas) {
-        const productsCtx = productsCanvas.getContext('2d');
-        productsChart = new Chart(productsCtx, {
+        const ctx = productsCanvas.getContext('2d');
+        productsChart = new Chart(ctx, {
             type: 'bar',
-            data: {
-                labels: ['Vanilla', 'Chocolate', 'Strawberry', 'Butterscotch'],
-                datasets: [{
-                    label: 'Orders',
-                    data: [45, 38, 32, 28],
-                    backgroundColor: '#ff8e8e'
-                }]
-            },
+            data: { labels: [], datasets: [{
+                label: 'Orders',
+                data: [],
+                backgroundColor: '#ff8e8e'
+            }]},
             options: {
                 responsive: true,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                }
+                plugins: { legend: { display: false } }
             }
         });
     }
+}
+
+function updateChartsWithRealData(orders) {
+    if (!orders || orders.length === 0) {
+        // Show demo data if no real data
+        updateChartsWithDemoData();
+        return;
+    }
+
+    // Sales chart - last 7 days
+    const last7Days = getLast7Days();
+    const salesByDay = {};
+    
+    orders.forEach(order => {
+        try {
+            const orderDate = new Date(order.Timestamp || order.Date || order.timestamp);
+            const dateStr = orderDate.toISOString().split('T')[0];
+            const total = parseFloat(order.Total || order.totalAmount) || 0;
+            
+            if (last7Days.includes(dateStr)) {
+                salesByDay[dateStr] = (salesByDay[dateStr] || 0) + total;
+            }
+        } catch (e) {}
+    });
+
+    const salesData = last7Days.map(date => salesByDay[date] || 0);
+    const dayLabels = last7Days.map(date => {
+        const d = new Date(date);
+        return d.toLocaleDateString('en-IN', { weekday: 'short' });
+    });
+
+    if (salesChart) {
+        salesChart.data.labels = dayLabels;
+        salesChart.data.datasets[0].data = salesData;
+        salesChart.update();
+    }
+
+    // Products chart - top products
+    const productCounts = {};
+    orders.forEach(order => {
+        const items = parseOrderItems(order.Items || order.items);
+        items.forEach(item => {
+            if (item.name) {
+                productCounts[item.name] = (productCounts[item.name] || 0) + (item.quantity || 1);
+            }
+        });
+    });
+
+    const topProducts = Object.entries(productCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
+
+    if (productsChart) {
+        productsChart.data.labels = topProducts.map(p => p[0]);
+        productsChart.data.datasets[0].data = topProducts.map(p => p[1]);
+        productsChart.update();
+    }
+}
+
+function updateChartsWithDemoData() {
+    if (salesChart) {
+        salesChart.data.labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        salesChart.data.datasets[0].data = [0, 0, 0, 0, 0, 0, 0];
+        salesChart.update();
+    }
+    
+    if (productsChart) {
+        productsChart.data.labels = ['No Data'];
+        productsChart.data.datasets[0].data = [0];
+        productsChart.update();
+    }
+}
+
+function getLast7Days() {
+    const dates = [];
+    for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        dates.push(date.toISOString().split('T')[0]);
+    }
+    return dates;
 }
 
 // =============================================
@@ -491,22 +492,22 @@ async function addMenuItem(e) {
         image: document.getElementById('imagePreview')?.querySelector('img')?.src || ''
     };
 
-    const submitBtn = document.querySelector('.menu-form button');
-    if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Adding...';
+    const btn = document.querySelector('.menu-form button');
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Adding...';
     }
 
     try {
-        const result = await jsonpRequest(
-            SCRIPT_URL + '?action=addProduct&' + 
+        const url = SCRIPT_URL + '?action=addProduct&' + 
             'name=' + encodeURIComponent(productData.name) +
             '&price=' + productData.price +
             '&category=' + encodeURIComponent(productData.category) +
             '&type=' + encodeURIComponent(productData.type) +
             '&description=' + encodeURIComponent(productData.description) +
-            '&image=' + encodeURIComponent(productData.image)
-        );
+            '&image=' + encodeURIComponent(productData.image);
+
+        const result = await jsonpRequest(url);
 
         if (result.success) {
             showAlert('✅ Product added successfully!', 'success');
@@ -514,14 +515,14 @@ async function addMenuItem(e) {
             resetImagePreview();
             loadDashboardData();
         } else {
-            showAlert(`❌ Failed to add product: ${result.error}`, 'error');
+            showAlert('❌ ' + (result.error || 'Failed to add product'), 'error');
         }
     } catch (error) {
-        showAlert(`❌ Error: ${error.message}`, 'error');
+        showAlert('❌ ' + error.message, 'error');
     } finally {
-        if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.textContent = '➕ Add Item';
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = '➕ Add Item';
         }
     }
 }
@@ -540,9 +541,9 @@ function editProduct(productName) {
     document.getElementById('editItemDescription').value = product.description || '';
     document.getElementById('editItemOldName').value = product.name;
     
-    const editImagePreview = document.getElementById('editImagePreview');
-    if (editImagePreview && product.image) {
-        editImagePreview.innerHTML = `<img src="${product.image}" alt="Preview">`;
+    const preview = document.getElementById('editImagePreview');
+    if (preview && product.image) {
+        preview.innerHTML = `<img src="${product.image}" alt="Preview">`;
     }
     
     showModal('editProductModal');
@@ -555,7 +556,7 @@ async function updateProduct(e) {
     const name = document.getElementById('editItemName').value;
     const price = document.getElementById('editItemPrice').value;
     const category = document.getElementById('editItemCategory').value;
-    const type = document.getElementById('editItemType')?.value;
+    const type = document.getElementById('editItemType').value;
     
     if (!oldName || !name || !price || !category || !type) {
         showAlert('Please fill all required fields', 'error');
@@ -573,33 +574,31 @@ async function updateProduct(e) {
     };
 
     try {
-        const result = await jsonpRequest(
-            SCRIPT_URL + '?action=updateProduct&' +
+        const url = SCRIPT_URL + '?action=updateProduct&' +
             'oldName=' + encodeURIComponent(productData.oldName) +
             '&name=' + encodeURIComponent(productData.name) +
             '&price=' + productData.price +
             '&category=' + encodeURIComponent(productData.category) +
             '&type=' + encodeURIComponent(productData.type) +
             '&description=' + encodeURIComponent(productData.description) +
-            '&image=' + encodeURIComponent(productData.image)
-        );
+            '&image=' + encodeURIComponent(productData.image);
+
+        const result = await jsonpRequest(url);
 
         if (result.success) {
             showAlert('✅ Product updated successfully!', 'success');
             closeModal('editProductModal');
             loadDashboardData();
         } else {
-            showAlert(`❌ Failed to update product: ${result.error}`, 'error');
+            showAlert('❌ ' + (result.error || 'Failed to update product'), 'error');
         }
     } catch (error) {
-        showAlert(`❌ Error: ${error.message}`, 'error');
+        showAlert('❌ ' + error.message, 'error');
     }
 }
 
 async function deleteProduct(productName) {
-    if (!confirm(`Are you sure you want to delete "${productName}"? This action cannot be undone.`)) {
-        return;
-    }
+    if (!confirm(`Delete "${productName}"?`)) return;
 
     try {
         const result = await jsonpRequest(SCRIPT_URL + '?action=deleteProduct&name=' + encodeURIComponent(productName));
@@ -609,10 +608,10 @@ async function deleteProduct(productName) {
             closeModal('editProductModal');
             loadDashboardData();
         } else {
-            showAlert(`❌ Failed to delete product: ${result.error}`, 'error');
+            showAlert('❌ ' + (result.error || 'Failed to delete product'), 'error');
         }
     } catch (error) {
-        showAlert(`❌ Error: ${error.message}`, 'error');
+        showAlert('❌ ' + error.message, 'error');
     }
 }
 
@@ -630,10 +629,10 @@ async function updateOrderStatus(orderId, status) {
             showAlert(`✅ Order marked as ${status}!`, 'success');
             loadDashboardData();
         } else {
-            showAlert(`❌ Failed to update order: ${result.error}`, 'error');
+            showAlert('❌ ' + (result.error || 'Failed to update order'), 'error');
         }
     } catch (error) {
-        showAlert(`❌ Error: ${error.message}`, 'error');
+        showAlert('❌ ' + error.message, 'error');
     }
 }
 
@@ -647,21 +646,21 @@ async function generateBill(orderId) {
             renderBill(result.bill);
             showModal('billModal');
         } else {
-            showAlert(`❌ Failed to generate bill: ${result.error}`, 'error');
+            showAlert('❌ ' + (result.error || 'Failed to generate bill'), 'error');
         }
     } catch (error) {
-        showAlert(`❌ Error: ${error.message}`, 'error');
+        showAlert('❌ ' + error.message, 'error');
     }
 }
 
 function renderBill(bill) {
-    const billContent = document.getElementById('billContent');
-    if (!billContent) return;
+    const content = document.getElementById('billContent');
+    if (!content) return;
     
     const items = bill.items || [];
     const total = bill.totalAmount || calculateOrderTotal(items);
     
-    const billHtml = `
+    const html = `
         <div class="bill-header">
             <h2>🍦 Yadava's Ice Cream</h2>
             <p>Delicious & Fresh</p>
@@ -669,24 +668,19 @@ function renderBill(bill) {
         
         <div class="bill-info">
             <div class="bill-info-item">
-                <strong>Order ID:</strong>
-                <span>${bill.orderId || 'N/A'}</span>
+                <strong>Order ID:</strong> <span>${bill.orderId || 'N/A'}</span>
             </div>
             <div class="bill-info-item">
-                <strong>Date & Time:</strong>
-                <span>${new Date(bill.timestamp).toLocaleString('en-IN')}</span>
+                <strong>Date & Time:</strong> <span>${new Date(bill.timestamp).toLocaleString('en-IN')}</span>
             </div>
             <div class="bill-info-item">
-                <strong>Customer Name:</strong>
-                <span>${bill.customerName || 'N/A'}</span>
+                <strong>Customer Name:</strong> <span>${bill.customerName || 'N/A'}</span>
             </div>
             <div class="bill-info-item">
-                <strong>Phone:</strong>
-                <span>${bill.customerPhone || 'N/A'}</span>
+                <strong>Phone:</strong> <span>${bill.customerPhone || 'N/A'}</span>
             </div>
             <div class="bill-info-item">
-                <strong>Table No:</strong>
-                <span>${bill.tableNumber || 'N/A'}</span>
+                <strong>Table No:</strong> <span>${bill.tableNumber || 'N/A'}</span>
             </div>
         </div>
 
@@ -708,8 +702,7 @@ function renderBill(bill) {
 
         ${bill.review && bill.review !== 'No note' ? `
             <div class="bill-info-item" style="margin-top: 15px;">
-                <strong>Special Instructions:</strong>
-                <span>${bill.review}</span>
+                <strong>Special Instructions:</strong> <span>${bill.review}</span>
             </div>
         ` : ''}
 
@@ -718,7 +711,7 @@ function renderBill(bill) {
         </div>
     `;
 
-    billContent.innerHTML = billHtml;
+    content.innerHTML = html;
 }
 
 function printBill() {
@@ -730,7 +723,7 @@ function closeBillModal() {
 }
 
 // =============================================
-// IMAGE PREVIEW FUNCTIONS
+// IMAGE FUNCTIONS
 // =============================================
 function previewImage(input) {
     const preview = document.getElementById('imagePreview');
@@ -738,11 +731,9 @@ function previewImage(input) {
     
     if (input.files && input.files[0]) {
         const reader = new FileReader();
-        
         reader.onload = function(e) {
             preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
         };
-        
         reader.readAsDataURL(input.files[0]);
     } else {
         resetImagePreview();
@@ -755,40 +746,43 @@ function previewEditImage(input) {
     
     if (input.files && input.files[0]) {
         const reader = new FileReader();
-        
         reader.onload = function(e) {
             preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
         };
-        
         reader.readAsDataURL(input.files[0]);
     }
 }
 
 function resetImagePreview() {
     const preview = document.getElementById('imagePreview');
-    if (preview) {
-        preview.innerHTML = '<span>Image Preview</span>';
-    }
+    if (preview) preview.innerHTML = '<span>Image Preview</span>';
 }
 
 // =============================================
-// EVENT LISTENERS & INITIALIZATION
+// INITIALIZATION
 // =============================================
 function setupEventListeners() {
-    const addProductForm = document.querySelector('.menu-form');
-    if (addProductForm) {
-        addProductForm.addEventListener('submit', addMenuItem);
-    }
+    const forms = [
+        document.querySelector('.menu-form'),
+        document.getElementById('editProductForm')
+    ];
     
-    const editProductForm = document.getElementById('editProductForm');
-    if (editProductForm) {
-        editProductForm.addEventListener('submit', updateProduct);
-    }
+    forms.forEach(form => {
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (form.classList.contains('menu-form')) {
+                    addMenuItem(e);
+                } else {
+                    updateProduct(e);
+                }
+            });
+        }
+    });
 }
 
 function initializeAdminPanel() {
-    console.log('🚀 Admin Panel Starting...');
-    
+    console.log('🚀 Starting Admin Panel...');
     showDashboard();
     initializeCharts();
     setupEventListeners();
@@ -801,17 +795,14 @@ function initializeAdminPanel() {
 // =============================================
 function loadDashboard() {
     loadDashboardData();
-    showAlert('Dashboard refreshed!', 'success');
 }
 
 function logout() {
-    if (confirm('Are you sure you want to logout?')) {
-        window.location.reload();
-    }
+    if (confirm('Logout?')) window.location.reload();
 }
 
 // =============================================
-// GLOBAL FUNCTION EXPORTS
+// GLOBAL EXPORTS
 // =============================================
 window.addMenuItem = addMenuItem;
 window.updateProduct = updateProduct;
@@ -828,7 +819,7 @@ window.closeModal = closeModal;
 window.logout = logout;
 window.testConnection = testConnection;
 
-// Initialize when DOM is loaded
+// Initialize
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initializeAdminPanel);
 } else {
