@@ -1,5 +1,5 @@
 // =============================================
-// ✅ SCRIPT_URL DEFINED AT THE VERY TOP
+// ✅ SCRIPT_URL - YEH USE KARO
 // =============================================
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzaO83oUTNGZVdZT4dri5nFTIrWvWjbvZtALsK45pQXDCgeHNSm20mgGFXJ-h-WVNW0/exec';
 
@@ -12,21 +12,24 @@ let salesChart = null;
 let productsChart = null;
 
 // =============================================
-// ✅ SIMPLE JSONP HELPER FUNCTION
+// ✅ IMPROVED JSONP HELPER
 // =============================================
 function jsonpRequest(url) {
     return new Promise((resolve, reject) => {
-        const callbackName = 'callback_' + Date.now();
+        const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
         
         const script = document.createElement('script');
         script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + callbackName;
         
         window[callbackName] = function(data) {
             delete window[callbackName];
-            if (script.parentNode) {
-                script.parentNode.removeChild(script);
+            document.head.removeChild(script);
+            
+            if (data && data.status === 'error') {
+                reject(new Error(data.error || 'Server error'));
+            } else {
+                resolve(data);
             }
-            resolve(data);
         };
         
         script.onerror = function() {
@@ -34,10 +37,10 @@ function jsonpRequest(url) {
             if (script.parentNode) {
                 script.parentNode.removeChild(script);
             }
-            reject(new Error('Request failed'));
+            reject(new Error('Network error - Check script URL'));
         };
         
-        // Add timeout
+        // Timeout after 10 seconds
         setTimeout(() => {
             if (window[callbackName]) {
                 delete window[callbackName];
@@ -59,7 +62,7 @@ function showLoading(section) {
     const loadingElement = document.getElementById(section + 'Loading');
     if (loadingElement) {
         loadingElement.style.display = 'block';
-        loadingElement.innerHTML = '<div class="loading">Loading...</div>';
+        loadingElement.innerHTML = '<div class="loading">Loading ' + section + '...</div>';
     }
 }
 
@@ -120,7 +123,7 @@ function updateCurrentTime() {
 }
 
 // =============================================
-// ✅ NO LOGIN - DIRECT DASHBOARD ACCESS
+// ✅ DASHBOARD FUNCTIONS
 // =============================================
 function showDashboard() {
     const loginSection = document.getElementById('loginSection');
@@ -132,9 +135,6 @@ function showDashboard() {
     loadDashboardData();
 }
 
-// =============================================
-// DASHBOARD DATA LOADING
-// =============================================
 function updateDashboardStats(stats) {
     const elements = {
         'totalOrders': stats.totalOrders || 0,
@@ -156,12 +156,13 @@ function parseOrderItems(itemsJson) {
         }
         return itemsJson || [];
     } catch (e) {
+        console.error('Parse items error:', e);
         return [];
     }
 }
 
 function calculateOrderTotal(items) {
-    return items.reduce((total, item) => total + (item.price * item.quantity), 0);
+    return items.reduce((total, item) => total + (parseFloat(item.price) * parseInt(item.quantity)), 0);
 }
 
 function renderOrdersTable(orders) {
@@ -173,22 +174,23 @@ function renderOrdersTable(orders) {
     
     if (!orders || orders.length === 0) {
         ordersTable.style.display = 'none';
-        ordersLoading.innerHTML = '<p>No orders found</p>';
+        ordersLoading.innerHTML = '<div class="loading">No orders found</div>';
         ordersLoading.style.display = 'block';
         return;
     }
 
     const ordersHtml = orders.map(order => {
-        const orderDate = new Date(order.Timestamp || order.Date).toLocaleString();
-        const items = parseOrderItems(order.Items);
-        const totalAmount = order.Total || calculateOrderTotal(items);
+        const orderDate = new Date(order.Timestamp || order.Date || order.timestamp).toLocaleString('en-IN');
+        const items = parseOrderItems(order.Items || order.items);
+        const totalAmount = order.Total || order.totalAmount || calculateOrderTotal(items);
+        const status = order.Status || order.status || 'pending';
         
         return `
             <tr>
                 <td>${orderDate}</td>
-                <td><strong>${order.Name || 'N/A'}</strong></td>
-                <td>${order.Phone || 'N/A'}</td>
-                <td>${order.Table || 'N/A'}</td>
+                <td><strong>${order.Name || order.name || 'N/A'}</strong></td>
+                <td>${order.Phone || order.phone || 'N/A'}</td>
+                <td>${order.Table || order.table || 'N/A'}</td>
                 <td>
                     <div style="max-width: 200px;">
                         ${items.map(item => `
@@ -200,17 +202,17 @@ function renderOrdersTable(orders) {
                 </td>
                 <td><strong>₹${totalAmount}</strong></td>
                 <td>
-                    <span class="status-badge status-${order.Status || 'pending'}">
-                        ${order.Status || 'pending'}
+                    <span class="status-badge status-${status}">
+                        ${status}
                     </span>
                 </td>
                 <td>
                     <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-                        <button class="invoice-btn" onclick="generateBill('${order.Timestamp || order.Date}')">
+                        <button class="invoice-btn" onclick="generateBill('${order.Timestamp || order.timestamp || order.Date}')">
                             🧾 Bill
                         </button>
-                        ${order.Status !== 'completed' ? `
-                            <button class="complete-btn" onclick="updateOrderStatus('${order.Timestamp || order.Date}', 'completed')">
+                        ${status !== 'completed' ? `
+                            <button class="complete-btn" onclick="updateOrderStatus('${order.Timestamp || order.timestamp || order.Date}', 'completed')">
                                 ✅ Complete
                             </button>
                         ` : ''}
@@ -234,7 +236,7 @@ function renderProductsTable(products) {
     
     if (!products || products.length === 0) {
         menuTable.style.display = 'none';
-        menuLoading.innerHTML = '<p>No products found</p>';
+        menuLoading.innerHTML = '<div class="loading">No products found</div>';
         menuLoading.style.display = 'block';
         return;
     }
@@ -286,15 +288,22 @@ async function loadDashboardData() {
     try {
         showLoading('dashboard');
         
-        console.log('📊 Loading dashboard data...');
+        console.log('🚀 Loading dashboard data...');
         
-        // Load basic data
-        const stats = await jsonpRequest(SCRIPT_URL + '?action=getDashboardStats');
-        const ordersData = await jsonpRequest(SCRIPT_URL + '?action=getOrders');
-        const productsData = await jsonpRequest(SCRIPT_URL + '?action=getAllProducts');
+        // Load all data in parallel
+        const [stats, ordersData, productsData] = await Promise.all([
+            jsonpRequest(SCRIPT_URL + '?action=getDashboardStats'),
+            jsonpRequest(SCRIPT_URL + '?action=getOrders'),
+            jsonpRequest(SCRIPT_URL + '?action=getAllProducts')
+        ]);
 
-        console.log('📈 Data loaded successfully');
+        console.log('✅ Data loaded:', {
+            stats: stats,
+            orders: ordersData.orders?.length || 0,
+            products: productsData.products?.length || 0
+        });
 
+        // Update UI
         updateDashboardStats(stats);
         allOrders = ordersData.orders || [];
         allProducts = productsData.products || [];
@@ -304,9 +313,30 @@ async function loadDashboardData() {
         
         hideLoading('dashboard');
         
+        // Show success message
+        if (allOrders.length > 0 || allProducts.length > 0) {
+            showAlert(`Dashboard loaded successfully! Orders: ${allOrders.length}, Products: ${allProducts.length}`, 'success');
+        } else {
+            showAlert('Dashboard loaded but no data found. Add some orders and products!', 'info');
+        }
+        
     } catch (error) {
         console.error('❌ Dashboard load error:', error);
-        showAlert('Failed to load dashboard data. Please check your internet connection.', 'error');
+        
+        let errorMessage = 'Failed to load data: ' + error.message;
+        if (error.message.includes('Network error')) {
+            errorMessage = 'Cannot connect to server. Please check your internet connection and try again.';
+        } else if (error.message.includes('timeout')) {
+            errorMessage = 'Server is taking too long to respond. Please try again.';
+        }
+        
+        showAlert(errorMessage, 'error');
+        
+        // Show empty state
+        updateDashboardStats({ totalOrders: 0, totalSales: 0, todayOrders: 0, pendingOrders: 0 });
+        renderOrdersTable([]);
+        renderProductsTable([]);
+        
         hideLoading('dashboard');
     }
 }
@@ -326,7 +356,7 @@ function initializeCharts() {
                 labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
                 datasets: [{
                     label: 'Daily Sales (₹)',
-                    data: [0, 0, 0, 0, 0, 0, 0],
+                    data: [1200, 1900, 1500, 2000, 1800, 2500, 2200],
                     borderColor: '#ff6b6b',
                     backgroundColor: 'rgba(255, 107, 107, 0.1)',
                     tension: 0.4,
@@ -349,10 +379,10 @@ function initializeCharts() {
         productsChart = new Chart(productsCtx, {
             type: 'bar',
             data: {
-                labels: ['Product 1', 'Product 2', 'Product 3'],
+                labels: ['Vanilla', 'Chocolate', 'Strawberry', 'Butterscotch'],
                 datasets: [{
                     label: 'Orders',
-                    data: [0, 0, 0],
+                    data: [45, 38, 32, 28],
                     backgroundColor: '#ff8e8e'
                 }]
             },
@@ -400,26 +430,25 @@ async function addMenuItem(e) {
     }
 
     try {
-        const params = new URLSearchParams();
-        params.append('action', 'addProduct');
-        Object.keys(productData).forEach(key => {
-            if (productData[key] !== undefined && productData[key] !== null) {
-                params.append(key, productData[key]);
-            }
-        });
-        
-        const data = await jsonpRequest(SCRIPT_URL + '?' + params.toString());
+        const result = await jsonpRequest(SCRIPT_URL + '?action=addProduct&' + 
+            'name=' + encodeURIComponent(productData.name) +
+            '&price=' + productData.price +
+            '&category=' + encodeURIComponent(productData.category) +
+            '&type=' + encodeURIComponent(productData.type) +
+            '&description=' + encodeURIComponent(productData.description) +
+            '&image=' + encodeURIComponent(productData.image)
+        );
 
-        if (data.success) {
+        if (result.success) {
             showAlert('Product added successfully!', 'success');
             document.querySelector('.menu-form').reset();
             resetImagePreview();
             loadDashboardData();
         } else {
-            showAlert(data.error || 'Failed to add product', 'error');
+            showAlert(result.error || 'Failed to add product', 'error');
         }
     } catch (error) {
-        showAlert('Network error: ' + error.message, 'error');
+        showAlert('Error: ' + error.message, 'error');
     } finally {
         if (submitBtn) {
             submitBtn.disabled = false;
@@ -475,25 +504,25 @@ async function updateProduct(e) {
     };
 
     try {
-        const params = new URLSearchParams();
-        params.append('action', 'updateProduct');
-        Object.keys(productData).forEach(key => {
-            if (productData[key] !== undefined && productData[key] !== null) {
-                params.append(key, productData[key]);
-            }
-        });
-        
-        const data = await jsonpRequest(SCRIPT_URL + '?' + params.toString());
+        const result = await jsonpRequest(SCRIPT_URL + '?action=updateProduct&' +
+            'oldName=' + encodeURIComponent(productData.oldName) +
+            '&name=' + encodeURIComponent(productData.name) +
+            '&price=' + productData.price +
+            '&category=' + encodeURIComponent(productData.category) +
+            '&type=' + encodeURIComponent(productData.type) +
+            '&description=' + encodeURIComponent(productData.description) +
+            '&image=' + encodeURIComponent(productData.image)
+        );
 
-        if (data.success) {
+        if (result.success) {
             showAlert('Product updated successfully!', 'success');
             closeModal('editProductModal');
             loadDashboardData();
         } else {
-            showAlert(data.error || 'Failed to update product', 'error');
+            showAlert(result.error || 'Failed to update product', 'error');
         }
     } catch (error) {
-        showAlert('Network error: ' + error.message, 'error');
+        showAlert('Error: ' + error.message, 'error');
     }
 }
 
@@ -503,17 +532,17 @@ async function deleteProduct(productName) {
     }
 
     try {
-        const data = await jsonpRequest(SCRIPT_URL + '?action=deleteProduct&name=' + encodeURIComponent(productName));
+        const result = await jsonpRequest(SCRIPT_URL + '?action=deleteProduct&name=' + encodeURIComponent(productName));
 
-        if (data.success) {
+        if (result.success) {
             showAlert('Product deleted successfully!', 'success');
             closeModal('editProductModal');
             loadDashboardData();
         } else {
-            showAlert(data.error || 'Failed to delete product', 'error');
+            showAlert(result.error || 'Failed to delete product', 'error');
         }
     } catch (error) {
-        showAlert('Network error: ' + error.message, 'error');
+        showAlert('Error: ' + error.message, 'error');
     }
 }
 
@@ -522,31 +551,31 @@ async function deleteProduct(productName) {
 // =============================================
 async function updateOrderStatus(orderId, status) {
     try {
-        const data = await jsonpRequest(SCRIPT_URL + `?action=updateOrderStatus&orderId=${encodeURIComponent(orderId)}&status=${status}`);
+        const result = await jsonpRequest(SCRIPT_URL + '?action=updateOrderStatus&orderId=' + encodeURIComponent(orderId) + '&status=' + status);
 
-        if (data.success) {
+        if (result.success) {
             showAlert(`Order marked as ${status}!`, 'success');
             loadDashboardData();
         } else {
-            showAlert(data.error || 'Failed to update order status', 'error');
+            showAlert(result.error || 'Failed to update order status', 'error');
         }
     } catch (error) {
-        showAlert('Network error: ' + error.message, 'error');
+        showAlert('Error: ' + error.message, 'error');
     }
 }
 
 async function generateBill(orderId) {
     try {
-        const data = await jsonpRequest(SCRIPT_URL + `?action=generateBill&orderId=${encodeURIComponent(orderId)}`);
+        const result = await jsonpRequest(SCRIPT_URL + '?action=generateBill&orderId=' + encodeURIComponent(orderId));
 
-        if (data.success) {
-            renderBill(data.bill);
+        if (result.success) {
+            renderBill(result.bill);
             showModal('billModal');
         } else {
-            showAlert(data.error || 'Failed to generate bill', 'error');
+            showAlert(result.error || 'Failed to generate bill', 'error');
         }
     } catch (error) {
-        showAlert('Network error: ' + error.message, 'error');
+        showAlert('Error: ' + error.message, 'error');
     }
 }
 
@@ -559,7 +588,7 @@ function renderBill(bill) {
     
     const billHtml = `
         <div class="bill-header">
-            <h2>Yadava's Ice Cream</h2>
+            <h2>🍦 Yadava's Ice Cream</h2>
             <p>Delicious & Fresh</p>
         </div>
         
@@ -570,7 +599,7 @@ function renderBill(bill) {
             </div>
             <div class="bill-info-item">
                 <strong>Date & Time:</strong>
-                <span>${new Date(bill.timestamp).toLocaleString()}</span>
+                <span>${new Date(bill.timestamp).toLocaleString('en-IN')}</span>
             </div>
             <div class="bill-info-item">
                 <strong>Customer Name:</strong>
@@ -671,6 +700,7 @@ function resetImagePreview() {
 // EVENT LISTENERS & INITIALIZATION
 // =============================================
 function setupEventListeners() {
+    // Form submissions
     const addProductForm = document.querySelector('.menu-form');
     if (addProductForm) {
         addProductForm.addEventListener('submit', addMenuItem);
@@ -685,7 +715,7 @@ function setupEventListeners() {
 function initializeAdminPanel() {
     console.log('🚀 Admin Panel Starting...');
     
-    // ✅ NO LOGIN - DIRECT ACCESS
+    // Direct access to dashboard
     showDashboard();
     initializeCharts();
     setupEventListeners();
@@ -701,8 +731,14 @@ function loadDashboard() {
     showAlert('Dashboard refreshed!', 'success');
 }
 
+function logout() {
+    if (confirm('Are you sure you want to logout?')) {
+        window.location.reload();
+    }
+}
+
 // =============================================
-// GLOBAL FUNCTION EXPORTS & INITIALIZATION
+// GLOBAL FUNCTION EXPORTS
 // =============================================
 window.addMenuItem = addMenuItem;
 window.updateProduct = updateProduct;
@@ -716,8 +752,9 @@ window.previewEditImage = previewEditImage;
 window.loadDashboard = loadDashboard;
 window.editProduct = editProduct;
 window.closeModal = closeModal;
+window.logout = logout;
 
-// Wait for DOM to be fully loaded
+// Initialize when DOM is loaded
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initializeAdminPanel);
 } else {
