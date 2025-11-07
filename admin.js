@@ -1,8 +1,8 @@
 // =============================================
 // ✅ SCRIPT_URL - YEH UPDATE KARO APNE NEW URL SE
 // =============================================
-// Tumhara naya URL yahan paste karo
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby6obWhcDkAuTC4IeS0ezRDRO3jPLVqUpKZDF5RpiaRZFMS2C2dcT3P-nZZ9bnjj_pe/exec';
+// YAHAN APNA NAYA URL PASTE KARO
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzllOLTfptlYXLFPE-h1wERyyusr1XCX0uWpe-szkWM9zBoA-VMQYqGLpCx7jKpO8S3/exec';
 
 // =============================================
 // GLOBAL STATE
@@ -13,11 +13,11 @@ let salesChart = null;
 let productsChart = null;
 
 // =============================================
-// ✅ IMPROVED JSONP HELPER
+// ✅ SIMPLE & RELIABLE JSONP HELPER
 // =============================================
 function jsonpRequest(url) {
     return new Promise((resolve, reject) => {
-        const callbackName = 'cb_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+        const callbackName = 'cb_' + Date.now();
         
         console.log('🔄 Making request to:', url);
         
@@ -25,31 +25,33 @@ function jsonpRequest(url) {
         script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + callbackName;
         
         window[callbackName] = function(data) {
-            console.log('✅ Response received:', data);
-            cleanup();
-            resolve(data);
-        };
-        
-        function cleanup() {
+            console.log('✅ Response received');
             delete window[callbackName];
             if (script.parentNode) {
                 script.parentNode.removeChild(script);
             }
-        }
+            resolve(data);
+        };
         
         script.onerror = function() {
             console.error('❌ Script load failed');
-            cleanup();
-            reject(new Error('Connection failed. Please check: 1) Script URL 2) Deployment 3) Internet connection'));
+            delete window[callbackName];
+            if (script.parentNode) {
+                script.parentNode.removeChild(script);
+            }
+            reject(new Error('Cannot connect to server. Please check the script URL.'));
         };
         
         setTimeout(() => {
             if (window[callbackName]) {
                 console.error('⏰ Request timeout');
-                cleanup();
-                reject(new Error('Request timeout. Server is not responding.'));
+                delete window[callbackName];
+                if (script.parentNode) {
+                    script.parentNode.removeChild(script);
+                }
+                reject(new Error('Request timeout. Please try again.'));
             }
-        }, 15000);
+        }, 10000);
         
         document.head.appendChild(script);
     });
@@ -60,14 +62,13 @@ function jsonpRequest(url) {
 // =============================================
 async function testConnection() {
     try {
-        showAlert('Testing connection to server...', 'info');
         console.log('🔧 Testing connection...');
         
         const result = await jsonpRequest(SCRIPT_URL + '?action=testConnection');
         
         if (result.status === 'success') {
-            console.log('✅ Connection successful:', result);
-            showAlert('✅ ' + result.message, 'success');
+            console.log('✅ Connection successful');
+            showAlert('✅ ' + (result.message || 'Server connection successful!'), 'success');
             return true;
         } else {
             throw new Error(result.error || 'Connection failed');
@@ -141,10 +142,16 @@ function showDashboard() {
     const dashboardSection = document.getElementById('dashboardSection');
     if (dashboardSection) dashboardSection.style.display = 'block';
     
-    // Test connection first
+    // Show loading immediately
+    showLoading('dashboard');
+    
+    // Test connection and load data
     testConnection().then(success => {
         if (success) {
             loadDashboardData();
+        } else {
+            hideLoading('dashboard');
+            showAlert('⚠️ Working in offline mode. Some features may not work.', 'info');
         }
     });
 }
@@ -264,7 +271,7 @@ function renderProductsTable(products) {
         <tr>
             <td>
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <img src="${product.image || 'https://via.placeholder.com/50x50?text=No+Image'}" 
+                    <img src="${product.image}" 
                          style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;">
                     <div>
                         <strong>${product.name}</strong>
@@ -274,7 +281,7 @@ function renderProductsTable(products) {
             </td>
             <td><strong>₹${product.price}</strong></td>
             <td>
-                <img src="${product.image || 'https://via.placeholder.com/50x50?text=No+Image'}" 
+                <img src="${product.image}" 
                      style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;">
             </td>
             <td>${product.category}</td>
@@ -309,30 +316,23 @@ async function loadDashboardData() {
             jsonpRequest(SCRIPT_URL + '?action=getAllProducts')
         ]);
 
-        console.log('✅ Data loaded:', {
-            stats: stats,
-            orders: ordersData.orders?.length,
-            products: productsData.products?.length
-        });
+        console.log('✅ Data loaded successfully');
 
-        // Update UI with REAL data
+        // Update UI with real data
         updateDashboardStats(stats);
         allOrders = ordersData.orders || [];
         allProducts = productsData.products || [];
         
         renderOrdersTable(allOrders);
         renderProductsTable(allProducts);
-        updateChartsWithRealData(allOrders); // ✅ REAL DATA CHARTS
         
         hideLoading('dashboard');
         
-        const orderCount = allOrders.length;
-        const productCount = allProducts.length;
-        showAlert(`✅ Dashboard loaded! ${orderCount} orders, ${productCount} products`, 'success');
+        showAlert(`✅ Dashboard loaded successfully!`, 'success');
         
     } catch (error) {
         console.error('❌ Dashboard load error:', error);
-        showAlert('❌ ' + error.message, 'error');
+        showAlert('❌ Failed to load data: ' + error.message, 'error');
         
         // Show empty state
         updateDashboardStats({ totalOrders: 0, totalSales: 0, todayOrders: 0, pendingOrders: 0 });
@@ -344,7 +344,7 @@ async function loadDashboardData() {
 }
 
 // =============================================
-// ✅ REAL-TIME CHARTS WITH REAL DATA
+// CHART FUNCTIONS
 // =============================================
 function initializeCharts() {
     const salesCanvas = document.getElementById('salesChart');
@@ -354,14 +354,17 @@ function initializeCharts() {
         const ctx = salesCanvas.getContext('2d');
         salesChart = new Chart(ctx, {
             type: 'line',
-            data: { labels: [], datasets: [{
-                label: 'Sales (₹)',
-                data: [],
-                borderColor: '#ff6b6b',
-                backgroundColor: 'rgba(255, 107, 107, 0.1)',
-                tension: 0.4,
-                fill: true
-            }]},
+            data: { 
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                datasets: [{
+                    label: 'Sales (₹)',
+                    data: [0, 0, 0, 0, 0, 0, 0],
+                    borderColor: '#ff6b6b',
+                    backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
             options: {
                 responsive: true,
                 plugins: { legend: { display: false } }
@@ -373,98 +376,20 @@ function initializeCharts() {
         const ctx = productsCanvas.getContext('2d');
         productsChart = new Chart(ctx, {
             type: 'bar',
-            data: { labels: [], datasets: [{
-                label: 'Orders',
-                data: [],
-                backgroundColor: '#ff8e8e'
-            }]},
+            data: { 
+                labels: ['No Data'],
+                datasets: [{
+                    label: 'Orders',
+                    data: [0],
+                    backgroundColor: '#ff8e8e'
+                }]
+            },
             options: {
                 responsive: true,
                 plugins: { legend: { display: false } }
             }
         });
     }
-}
-
-function updateChartsWithRealData(orders) {
-    if (!orders || orders.length === 0) {
-        // Show demo data if no real data
-        updateChartsWithDemoData();
-        return;
-    }
-
-    // Sales chart - last 7 days
-    const last7Days = getLast7Days();
-    const salesByDay = {};
-    
-    orders.forEach(order => {
-        try {
-            const orderDate = new Date(order.Timestamp || order.Date || order.timestamp);
-            const dateStr = orderDate.toISOString().split('T')[0];
-            const total = parseFloat(order.Total || order.totalAmount) || 0;
-            
-            if (last7Days.includes(dateStr)) {
-                salesByDay[dateStr] = (salesByDay[dateStr] || 0) + total;
-            }
-        } catch (e) {}
-    });
-
-    const salesData = last7Days.map(date => salesByDay[date] || 0);
-    const dayLabels = last7Days.map(date => {
-        const d = new Date(date);
-        return d.toLocaleDateString('en-IN', { weekday: 'short' });
-    });
-
-    if (salesChart) {
-        salesChart.data.labels = dayLabels;
-        salesChart.data.datasets[0].data = salesData;
-        salesChart.update();
-    }
-
-    // Products chart - top products
-    const productCounts = {};
-    orders.forEach(order => {
-        const items = parseOrderItems(order.Items || order.items);
-        items.forEach(item => {
-            if (item.name) {
-                productCounts[item.name] = (productCounts[item.name] || 0) + (item.quantity || 1);
-            }
-        });
-    });
-
-    const topProducts = Object.entries(productCounts)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5);
-
-    if (productsChart) {
-        productsChart.data.labels = topProducts.map(p => p[0]);
-        productsChart.data.datasets[0].data = topProducts.map(p => p[1]);
-        productsChart.update();
-    }
-}
-
-function updateChartsWithDemoData() {
-    if (salesChart) {
-        salesChart.data.labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-        salesChart.data.datasets[0].data = [0, 0, 0, 0, 0, 0, 0];
-        salesChart.update();
-    }
-    
-    if (productsChart) {
-        productsChart.data.labels = ['No Data'];
-        productsChart.data.datasets[0].data = [0];
-        productsChart.update();
-    }
-}
-
-function getLast7Days() {
-    const dates = [];
-    for (let i = 6; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        dates.push(date.toISOString().split('T')[0]);
-    }
-    return dates;
 }
 
 // =============================================
@@ -489,7 +414,7 @@ async function addMenuItem(e) {
         category: category,
         type: type,
         description: document.getElementById('itemDescription')?.value || '',
-        image: document.getElementById('imagePreview')?.querySelector('img')?.src || ''
+        image: document.getElementById('imagePreview')?.querySelector('img')?.src || 'https://via.placeholder.com/300x200/ff6b6b/white?text=' + encodeURIComponent(name)
     };
 
     const btn = document.querySelector('.menu-form button');
@@ -542,7 +467,7 @@ function editProduct(productName) {
     document.getElementById('editItemOldName').value = product.name;
     
     const preview = document.getElementById('editImagePreview');
-    if (preview && product.image) {
+    if (preview) {
         preview.innerHTML = `<img src="${product.image}" alt="Preview">`;
     }
     
@@ -570,7 +495,7 @@ async function updateProduct(e) {
         category: category,
         type: type,
         description: document.getElementById('editItemDescription')?.value || '',
-        image: document.getElementById('editImagePreview')?.querySelector('img')?.src || ''
+        image: document.getElementById('editImagePreview')?.querySelector('img')?.src || 'https://via.placeholder.com/300x200/ff6b6b/white?text=' + encodeURIComponent(name)
     };
 
     try {
@@ -762,23 +687,15 @@ function resetImagePreview() {
 // INITIALIZATION
 // =============================================
 function setupEventListeners() {
-    const forms = [
-        document.querySelector('.menu-form'),
-        document.getElementById('editProductForm')
-    ];
+    const addForm = document.querySelector('.menu-form');
+    const editForm = document.getElementById('editProductForm');
     
-    forms.forEach(form => {
-        if (form) {
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                if (form.classList.contains('menu-form')) {
-                    addMenuItem(e);
-                } else {
-                    updateProduct(e);
-                }
-            });
-        }
-    });
+    if (addForm) {
+        addForm.addEventListener('submit', addMenuItem);
+    }
+    if (editForm) {
+        editForm.addEventListener('submit', updateProduct);
+    }
 }
 
 function initializeAdminPanel() {
