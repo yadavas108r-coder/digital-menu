@@ -1,31 +1,25 @@
 // =============================================
 // ✅ SCRIPT_URL - YEH UPDATE KARO APNE NEW URL SE
 // =============================================
-// YAHAN APNA NAYA URL PASTE KARO
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzllOLTfptlYXLFPE-h1wERyyusr1XCX0uWpe-szkWM9zBoA-VMQYqGLpCx7jKpO8S3/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby6NY06_skY7-ocNgJp8kjNQyIvNETKhT-jNI7Og85ziGnMaLkJt7ujr9ciNHstJuRM/exec';
 
 // =============================================
 // GLOBAL STATE
 // =============================================
 let allProducts = [];
 let allOrders = [];
-let salesChart = null;
-let productsChart = null;
 
 // =============================================
-// ✅ SIMPLE & RELIABLE JSONP HELPER
+// ✅ RELIABLE JSONP HELPER
 // =============================================
 function jsonpRequest(url) {
     return new Promise((resolve, reject) => {
         const callbackName = 'cb_' + Date.now();
         
-        console.log('🔄 Making request to:', url);
-        
         const script = document.createElement('script');
         script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + callbackName;
         
         window[callbackName] = function(data) {
-            console.log('✅ Response received');
             delete window[callbackName];
             if (script.parentNode) {
                 script.parentNode.removeChild(script);
@@ -34,7 +28,6 @@ function jsonpRequest(url) {
         };
         
         script.onerror = function() {
-            console.error('❌ Script load failed');
             delete window[callbackName];
             if (script.parentNode) {
                 script.parentNode.removeChild(script);
@@ -44,7 +37,6 @@ function jsonpRequest(url) {
         
         setTimeout(() => {
             if (window[callbackName]) {
-                console.error('⏰ Request timeout');
                 delete window[callbackName];
                 if (script.parentNode) {
                     script.parentNode.removeChild(script);
@@ -62,19 +54,15 @@ function jsonpRequest(url) {
 // =============================================
 async function testConnection() {
     try {
-        console.log('🔧 Testing connection...');
-        
         const result = await jsonpRequest(SCRIPT_URL + '?action=testConnection');
         
         if (result.status === 'success') {
-            console.log('✅ Connection successful');
-            showAlert('✅ ' + (result.message || 'Server connection successful!'), 'success');
+            showAlert('✅ ' + result.message, 'success');
             return true;
         } else {
             throw new Error(result.error || 'Connection failed');
         }
     } catch (error) {
-        console.error('❌ Connection test failed:', error);
         showAlert('❌ ' + error.message, 'error');
         return false;
     }
@@ -97,7 +85,6 @@ function hideLoading(section) {
 }
 
 function showAlert(message, type = 'info') {
-    // Remove existing alerts
     document.querySelectorAll('.alert').forEach(alert => alert.remove());
     
     const alertDiv = document.createElement('div');
@@ -142,16 +129,13 @@ function showDashboard() {
     const dashboardSection = document.getElementById('dashboardSection');
     if (dashboardSection) dashboardSection.style.display = 'block';
     
-    // Show loading immediately
     showLoading('dashboard');
     
-    // Test connection and load data
     testConnection().then(success => {
         if (success) {
             loadDashboardData();
         } else {
             hideLoading('dashboard');
-            showAlert('⚠️ Working in offline mode. Some features may not work.', 'info');
         }
     });
 }
@@ -308,87 +292,35 @@ async function loadDashboardData() {
     try {
         showLoading('dashboard');
         
-        console.log('📊 Loading dashboard data...');
-        
         const [stats, ordersData, productsData] = await Promise.all([
             jsonpRequest(SCRIPT_URL + '?action=getDashboardStats'),
             jsonpRequest(SCRIPT_URL + '?action=getOrders'),
             jsonpRequest(SCRIPT_URL + '?action=getAllProducts')
         ]);
 
-        console.log('✅ Data loaded successfully');
-
-        // Update UI with real data
-        updateDashboardStats(stats);
-        allOrders = ordersData.orders || [];
-        allProducts = productsData.products || [];
+        if (stats.status === 'success') {
+            updateDashboardStats(stats);
+        }
         
-        renderOrdersTable(allOrders);
-        renderProductsTable(allProducts);
+        if (ordersData.status === 'success') {
+            allOrders = ordersData.orders || [];
+            renderOrdersTable(allOrders);
+        }
+        
+        if (productsData.status === 'success') {
+            allProducts = productsData.products || [];
+            renderProductsTable(allProducts);
+        }
         
         hideLoading('dashboard');
-        
         showAlert(`✅ Dashboard loaded successfully!`, 'success');
         
     } catch (error) {
-        console.error('❌ Dashboard load error:', error);
         showAlert('❌ Failed to load data: ' + error.message, 'error');
-        
-        // Show empty state
         updateDashboardStats({ totalOrders: 0, totalSales: 0, todayOrders: 0, pendingOrders: 0 });
         renderOrdersTable([]);
         renderProductsTable([]);
-        
         hideLoading('dashboard');
-    }
-}
-
-// =============================================
-// CHART FUNCTIONS
-// =============================================
-function initializeCharts() {
-    const salesCanvas = document.getElementById('salesChart');
-    const productsCanvas = document.getElementById('productsChart');
-    
-    if (salesCanvas) {
-        const ctx = salesCanvas.getContext('2d');
-        salesChart = new Chart(ctx, {
-            type: 'line',
-            data: { 
-                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                datasets: [{
-                    label: 'Sales (₹)',
-                    data: [0, 0, 0, 0, 0, 0, 0],
-                    borderColor: '#ff6b6b',
-                    backgroundColor: 'rgba(255, 107, 107, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { display: false } }
-            }
-        });
-    }
-
-    if (productsCanvas) {
-        const ctx = productsCanvas.getContext('2d');
-        productsChart = new Chart(ctx, {
-            type: 'bar',
-            data: { 
-                labels: ['No Data'],
-                datasets: [{
-                    label: 'Orders',
-                    data: [0],
-                    backgroundColor: '#ff8e8e'
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { display: false } }
-            }
-        });
     }
 }
 
@@ -434,7 +366,7 @@ async function addMenuItem(e) {
 
         const result = await jsonpRequest(url);
 
-        if (result.success) {
+        if (result.status === 'success') {
             showAlert('✅ Product added successfully!', 'success');
             document.querySelector('.menu-form').reset();
             resetImagePreview();
@@ -481,7 +413,7 @@ async function updateProduct(e) {
     const name = document.getElementById('editItemName').value;
     const price = document.getElementById('editItemPrice').value;
     const category = document.getElementById('editItemCategory').value;
-    const type = document.getElementById('editItemType').value;
+    const type = document.getElementById('editItemType')?.value;
     
     if (!oldName || !name || !price || !category || !type) {
         showAlert('Please fill all required fields', 'error');
@@ -510,7 +442,7 @@ async function updateProduct(e) {
 
         const result = await jsonpRequest(url);
 
-        if (result.success) {
+        if (result.status === 'success') {
             showAlert('✅ Product updated successfully!', 'success');
             closeModal('editProductModal');
             loadDashboardData();
@@ -528,7 +460,7 @@ async function deleteProduct(productName) {
     try {
         const result = await jsonpRequest(SCRIPT_URL + '?action=deleteProduct&name=' + encodeURIComponent(productName));
 
-        if (result.success) {
+        if (result.status === 'success') {
             showAlert('✅ Product deleted successfully!', 'success');
             closeModal('editProductModal');
             loadDashboardData();
@@ -550,7 +482,7 @@ async function updateOrderStatus(orderId, status) {
             encodeURIComponent(orderId) + '&status=' + status
         );
 
-        if (result.success) {
+        if (result.status === 'success') {
             showAlert(`✅ Order marked as ${status}!`, 'success');
             loadDashboardData();
         } else {
@@ -567,7 +499,7 @@ async function generateBill(orderId) {
             SCRIPT_URL + '?action=generateBill&orderId=' + encodeURIComponent(orderId)
         );
 
-        if (result.success) {
+        if (result.status === 'success') {
             renderBill(result.bill);
             showModal('billModal');
         } else {
@@ -699,9 +631,7 @@ function setupEventListeners() {
 }
 
 function initializeAdminPanel() {
-    console.log('🚀 Starting Admin Panel...');
     showDashboard();
-    initializeCharts();
     setupEventListeners();
     updateCurrentTime();
     setInterval(updateCurrentTime, 60000);
