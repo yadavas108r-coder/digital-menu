@@ -1,7 +1,7 @@
 // =============================================
 // ✅ SCRIPT_URL - YEH UPDATE KARO APNE NEW URL SE
 // =============================================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby6NY06_skY7-ocNgJp8kjNQyIvNETKhT-jNI7Og85ziGnMaLkJt7ujr9ciNHstJuRM/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbytm_qmrzbJljoueecFK8_F-yBiU3evpeU4NWVl6_tCkvtiG_jCoHSE4xlS1RxDoCpe/exec';
 
 // =============================================
 // GLOBAL STATE
@@ -10,14 +10,11 @@ let allProducts = [];
 let allOrders = [];
 
 // =============================================
-// ✅ RELIABLE JSONP HELPER
+// ✅ SIMPLE JSONP HELPER
 // =============================================
 function jsonpRequest(url) {
     return new Promise((resolve, reject) => {
-        const callbackName = 'cb_' + Date.now();
-        
-        const script = document.createElement('script');
-        script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + callbackName;
+        const callbackName = 'jsonp_' + Date.now();
         
         window[callbackName] = function(data) {
             delete window[callbackName];
@@ -27,13 +24,18 @@ function jsonpRequest(url) {
             resolve(data);
         };
         
+        const script = document.createElement('script');
+        script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + callbackName;
+        
         script.onerror = function() {
             delete window[callbackName];
             if (script.parentNode) {
                 script.parentNode.removeChild(script);
             }
-            reject(new Error('Cannot connect to server. Please check the script URL.'));
+            reject(new Error('Failed to load script'));
         };
+        
+        document.head.appendChild(script);
         
         setTimeout(() => {
             if (window[callbackName]) {
@@ -41,31 +43,10 @@ function jsonpRequest(url) {
                 if (script.parentNode) {
                     script.parentNode.removeChild(script);
                 }
-                reject(new Error('Request timeout. Please try again.'));
+                reject(new Error('Request timeout'));
             }
         }, 10000);
-        
-        document.head.appendChild(script);
     });
-}
-
-// =============================================
-// ✅ TEST CONNECTION FUNCTION
-// =============================================
-async function testConnection() {
-    try {
-        const result = await jsonpRequest(SCRIPT_URL + '?action=testConnection');
-        
-        if (result.status === 'success') {
-            showAlert('✅ ' + result.message, 'success');
-            return true;
-        } else {
-            throw new Error(result.error || 'Connection failed');
-        }
-    } catch (error) {
-        showAlert('❌ ' + error.message, 'error');
-        return false;
-    }
 }
 
 // =============================================
@@ -129,15 +110,7 @@ function showDashboard() {
     const dashboardSection = document.getElementById('dashboardSection');
     if (dashboardSection) dashboardSection.style.display = 'block';
     
-    showLoading('dashboard');
-    
-    testConnection().then(success => {
-        if (success) {
-            loadDashboardData();
-        } else {
-            hideLoading('dashboard');
-        }
-    });
+    loadDashboardData();
 }
 
 function updateDashboardStats(stats) {
@@ -292,11 +265,14 @@ async function loadDashboardData() {
     try {
         showLoading('dashboard');
         
-        const [stats, ordersData, productsData] = await Promise.all([
-            jsonpRequest(SCRIPT_URL + '?action=getDashboardStats'),
-            jsonpRequest(SCRIPT_URL + '?action=getOrders'),
-            jsonpRequest(SCRIPT_URL + '?action=getAllProducts')
-        ]);
+        console.log('📊 Loading dashboard data...');
+        
+        // Load data one by one
+        const stats = await jsonpRequest(SCRIPT_URL + '?action=getDashboardStats');
+        const ordersData = await jsonpRequest(SCRIPT_URL + '?action=getOrders');
+        const productsData = await jsonpRequest(SCRIPT_URL + '?action=getAllProducts');
+
+        console.log('✅ Data loaded successfully');
 
         if (stats.status === 'success') {
             updateDashboardStats(stats);
@@ -316,10 +292,14 @@ async function loadDashboardData() {
         showAlert(`✅ Dashboard loaded successfully!`, 'success');
         
     } catch (error) {
+        console.error('❌ Dashboard load error:', error);
         showAlert('❌ Failed to load data: ' + error.message, 'error');
+        
+        // Show empty state
         updateDashboardStats({ totalOrders: 0, totalSales: 0, todayOrders: 0, pendingOrders: 0 });
         renderOrdersTable([]);
         renderProductsTable([]);
+        
         hideLoading('dashboard');
     }
 }
@@ -631,6 +611,7 @@ function setupEventListeners() {
 }
 
 function initializeAdminPanel() {
+    console.log('🚀 Starting Admin Panel...');
     showDashboard();
     setupEventListeners();
     updateCurrentTime();
@@ -664,7 +645,6 @@ window.loadDashboard = loadDashboard;
 window.editProduct = editProduct;
 window.closeModal = closeModal;
 window.logout = logout;
-window.testConnection = testConnection;
 
 // Initialize
 if (document.readyState === 'loading') {
