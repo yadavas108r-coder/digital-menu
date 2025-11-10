@@ -688,7 +688,9 @@
         <form class="menu-form" onsubmit="return addMenuItem(event)">
           <input type="text" id="itemName" placeholder="Item Name" required />
           <input type="number" id="itemPrice" placeholder="Price ₹" step="0.01" required />
-          <input type="text" id="itemCategory" placeholder="Category" required />
+         <select id="itemCategory" required onchange="checkAddNewCategory(this)">
+           <option value="">-- Select Category --</option>
+         </select>
           <textarea id="itemDescription" placeholder="Description"></textarea>
           <select id="itemType" required>
             <option value="veg">🟢 Veg</option>
