@@ -2,129 +2,146 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Go Digital | Admin Panel</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <title>Barf Malai Admin Panel</title>
   <style>
-    * {margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif;}
-    body {background: #f5f6fa; color: #222;}
-    header {background: #222; color: #fff; padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between;}
-    header h1 {font-size: 1.5rem;}
-    .dashboard {display: flex; gap: 1rem; padding: 1rem;}
-    aside {width: 230px; background: #fff; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); padding: 1rem;}
-    aside ul {list-style: none;}
-    aside ul li {padding: 10px; margin-bottom: 8px; background: #eee; border-radius: 8px; cursor: pointer; transition: 0.2s;}
-    aside ul li:hover, aside ul li.active {background: #222; color: #fff;}
-    main {flex: 1; background: #fff; border-radius: 12px; padding: 1rem 2rem; box-shadow: 0 2px 6px rgba(0,0,0,0.1);}
-    .hidden {display: none;}
-    table {width: 100%; border-collapse: collapse; margin-top: 1rem;}
-    th, td {border: 1px solid #ddd; padding: 8px; text-align: center;}
-    th {background: #f0f0f0;}
-    button {padding: 6px 10px; border: none; border-radius: 6px; cursor: pointer;}
-    .btn-primary {background: #222; color: #fff;}
-    .btn-danger {background: #e74c3c; color: #fff;}
-    .btn-success {background: #2ecc71; color: #fff;}
-    input, select, textarea {width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; margin: 6px 0;}
-    .grid-2 {display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;}
+    body {font-family: 'Poppins', sans-serif; background:#fafafa; margin:0; padding:0;}
+    header {background:#ff6b6b; color:white; padding:15px; text-align:center; font-size:22px;}
+    .container {max-width:900px; margin:30px auto; background:white; border-radius:10px; box-shadow:0 3px 10px rgba(0,0,0,0.1); padding:20px;}
+    h2 {border-left:5px solid #ff6b6b; padding-left:10px;}
+    form {margin:15px 0;}
+    input, select {padding:8px; margin:5px 0; width:100%; border:1px solid #ccc; border-radius:6px;}
+    button {background:#ff6b6b; color:white; border:none; padding:10px 16px; border-radius:6px; cursor:pointer;}
+    button:hover {background:#ff5050;}
+    table {width:100%; border-collapse:collapse; margin-top:15px;}
+    th, td {border:1px solid #ddd; padding:8px; text-align:left;}
+    th {background:#ffefef;}
+    .success {color:green;}
+    .error {color:red;}
   </style>
 </head>
-
 <body>
-  <header>
-    <h1>Go Digital Admin Dashboard</h1>
-    <button id="logoutBtn" class="btn-danger">Logout</button>
-  </header>
+  <header>🍦 Barf Malai Admin Panel</header>
+  <div class="container">
 
-  <div class="dashboard">
-    <aside>
-      <ul>
-        <li class="nav-item active" data-section="analytics">📊 Analytics</li>
-        <li class="nav-item" data-section="orders">🧾 Orders</li>
-        <li class="nav-item" data-section="categories">📂 Categories</li>
-        <li class="nav-item" data-section="products">🍔 Products</li>
-      </ul>
-    </aside>
+    <h2>Add Category</h2>
+    <form id="addCategoryForm">
+      <input type="text" id="catName" placeholder="Category Name" required>
+      <input type="file" id="catImage" accept="image/*" required>
+      <button type="submit">Upload Category</button>
+    </form>
+    <div id="catMsg"></div>
 
-    <main>
-      <!-- Analytics Section -->
-      <section id="analyticsSection">
-        <h2>📈 Analytics Overview</h2>
-        <div class="grid-2">
-          <div>
-            <h3>Total Orders</h3>
-            <p id="totalOrders">0</p>
-          </div>
-          <div>
-            <h3>Total Revenue</h3>
-            <p id="totalRevenue">₹0</p>
-          </div>
-        </div>
-      </section>
+    <hr>
 
-      <!-- Orders Section -->
-      <section id="ordersSection" class="hidden">
-        <h2>🧾 Orders Management</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Timestamp</th>
-              <th>Name</th>
-              <th>Table</th>
-              <th>Items</th>
-              <th>Total</th>
-              <th>Review</th>
-              <th>Email</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody id="ordersTableBody"></tbody>
-        </table>
-      </section>
+    <h2>Add Menu Item</h2>
+    <form id="addMenuForm">
+      <input type="text" id="itemName" placeholder="Item Name" required>
+      <input type="number" id="itemPrice" placeholder="Price" required>
+      <input type="text" id="itemDescription" placeholder="Description">
+      <select id="itemCategory" required></select>
+      <input type="file" id="itemImage" accept="image/*" required>
+      <select id="itemType">
+        <option value="veg">Veg</option>
+        <option value="non-veg">Non-Veg</option>
+      </select>
+      <button type="submit">Add Menu Item</button>
+    </form>
+    <div id="menuMsg"></div>
 
-      <!-- Category Section -->
-      <section id="categoriesSection" class="hidden">
-        <h2>📂 Manage Categories</h2>
-        <div>
-          <input type="text" id="newCategoryName" placeholder="Category Name">
-          <input type="text" id="newCategoryImage" placeholder="Category Image URL">
-          <button id="addCategoryBtn" class="btn-success">Add Category</button>
-        </div>
-        <table>
-          <thead>
-            <tr><th>Name</th><th>Image</th><th>Action</th></tr>
-          </thead>
-          <tbody id="categoryTableBody"></tbody>
-        </table>
-      </section>
+    <hr>
+    <h2>Current Categories</h2>
+    <table id="catTable">
+      <thead><tr><th>Name</th><th>Image</th></tr></thead>
+      <tbody></tbody>
+    </table>
 
-      <!-- Products Section -->
-      <section id="productsSection" class="hidden">
-        <h2>🍔 Manage Products</h2>
-        <div class="grid-2">
-          <input type="text" id="productName" placeholder="Product Name">
-          <input type="number" id="productPrice" placeholder="Product Price">
-          <input type="text" id="productImage" placeholder="Product Image URL">
-          <textarea id="productDesc" placeholder="Product Description"></textarea>
-          <select id="productCategory"></select>
-          <button id="addProductBtn" class="btn-primary">Add Product</button>
-        </div>
-
-        <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Category</th>
-              <th>Price</th>
-              <th>Image</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody id="productTableBody"></tbody>
-        </table>
-      </section>
-    </main>
   </div>
 
-  <script src="admin.js"></script>
+<script>
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbytm_qmrzbJljoueecFK8_F-yBiU3evpeU4NWVl6_tCkvtiG_jCoHSE4xlS1RxDoCpe/exec";
+
+// ---- CATEGORY UPLOAD ----
+document.getElementById("addCategoryForm").addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  const msg = document.getElementById("catMsg");
+  const name = document.getElementById("catName").value.trim();
+  const file = document.getElementById("catImage").files[0];
+  if(!name || !file) return alert("Please fill all fields");
+
+  const fd = new FormData();
+  fd.append("action","uploadCategory");
+  fd.append("name",name);
+  fd.append("file",file);
+  msg.innerHTML="⏳ Uploading...";
+
+  try{
+    const res = await fetch(SHEET_URL,{method:"POST",body:fd});
+    const data = await res.json();
+    if(data.success){
+      msg.innerHTML = "<span class='success'>✅ Category added successfully</span>";
+      document.getElementById("addCategoryForm").reset();
+      loadCategories();
+    }else msg.innerHTML = "<span class='error'>❌ "+data.error+"</span>";
+  }catch(err){
+    msg.innerHTML = "<span class='error'>❌ Upload failed</span>";
+  }
+});
+
+// ---- MENU ITEM UPLOAD ----
+document.getElementById("addMenuForm").addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  const msg = document.getElementById("menuMsg");
+  const name = itemName.value.trim();
+  const price = itemPrice.value.trim();
+  const desc = itemDescription.value.trim();
+  const cat = itemCategory.value;
+  const type = itemType.value;
+  const file = itemImage.files[0];
+  if(!name || !price || !cat || !file) return alert("Fill all required fields");
+
+  const fd = new FormData();
+  fd.append("action","uploadMenuItem");
+  fd.append("name",name);
+  fd.append("price",price);
+  fd.append("desc",desc);
+  fd.append("category",cat);
+  fd.append("type",type);
+  fd.append("file",file);
+  msg.innerHTML="⏳ Uploading...";
+
+  try{
+    const res = await fetch(SHEET_URL,{method:"POST",body:fd});
+    const data = await res.json();
+    if(data.success){
+      msg.innerHTML = "<span class='success'>✅ Menu item added successfully</span>";
+      document.getElementById("addMenuForm").reset();
+    }else msg.innerHTML = "<span class='error'>❌ "+data.error+"</span>";
+  }catch(err){
+    msg.innerHTML = "<span class='error'>❌ Upload failed</span>";
+  }
+});
+
+// ---- LOAD CATEGORIES INTO MENU FORM ----
+async function loadCategories(){
+  try{
+    const res = await fetch(SHEET_URL+"?action=getCategories");
+    const data = await res.json();
+    const select = document.getElementById("itemCategory");
+    const tbody = document.querySelector("#catTable tbody");
+    select.innerHTML="";
+    tbody.innerHTML="";
+    data.forEach(c=>{
+      const opt = document.createElement("option");
+      opt.value=c.name;
+      opt.textContent=c.name;
+      select.appendChild(opt);
+      const tr = document.createElement("tr");
+      tr.innerHTML=`<td>${c.name}</td><td><img src="${c.image}" width="60"></td>`;
+      tbody.appendChild(tr);
+    });
+  }catch(err){console.error(err);}
+}
+loadCategories();
+</script>
 </body>
 </html>
