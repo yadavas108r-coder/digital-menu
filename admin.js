@@ -1,5 +1,5 @@
 // admin.js
-const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbx1opO46vRqIiqK_AOTnQhJcaYHRulHPLoV1VPcPhPt7RMunbjOhQxuyRxhPjbUpsLp/exec'; // <-- replace with your deployed web app URL
+const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyJhNtesxLueBswZHEDmfkpv9EIjR2pPBqOgCvD3Cj9vz_I1Q4IJvJ5m1ZhutiNnEbs/exec'; // <-- replace with your deployed web app URL
 
 // small JSONP helper
 function jsonpRequest(url, timeout = 10000) {
