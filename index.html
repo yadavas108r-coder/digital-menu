@@ -3,35 +3,44 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Barf Malai</title>
+  <title>Barf Malai | Go Digital</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/857/857681.png" />
 </head>
 <body>
+  <!-- 🌟 Splash / Welcome Animation -->
+  <div id="splashScreen">
+    <div class="splash-content">
+      <img src="https://cdn-icons-png.flaticon.com/512/857/857681.png" alt="Go Digital Logo" />
+      <h1>Welcome to <span>Go Digital</span></h1>
+      <p>Loading your smart menu...</p>
+    </div>
+  </div>
+
+  <!-- 🧊 Header -->
   <header>
     <div class="logo">❄️ Barf Malai</div>
     <div class="filters">
       <input type="text" id="searchInput" placeholder="Search dishes..." />
-      <select id="categoryFilter">
-        <option value="All">All Categories</option>
-      </select>
     </div>
     <div class="cart-btn">
       <button id="cartIconBtn">🛒 <span id="cartCount">0</span></button>
     </div>
   </header>
 
-  <!-- Premium Category Section Added Here -->
-  <div class="category-section">
-    <h2 class="category-title">All Categories</h2>
+  <!-- 🏷️ Premium Category Section -->
+  <section class="category-section">
+    <h2 class="category-title">Explore Categories</h2>
     <div class="category-grid" id="categoryGrid">
-      <!-- Categories will be loaded dynamically -->
+      <!-- Categories will load dynamically -->
     </div>
-  </div>
+  </section>
 
+  <!-- 🍧 Menu Section -->
   <main>
     <section id="menu" class="menu-grid"></section>
 
+    <!-- 🛍️ Cart Sidebar -->
     <aside id="cart">
       <div class="cart-header">
         <h2>🛍️ Your Cart</h2>
@@ -41,15 +50,17 @@
       <div class="cart-total">
         <p>Total: ₹<span id="cartTotal">0</span></p>
       </div>
+
+      <!-- 🧾 Order Form -->
       <div class="order-form">
         <div class="form-group">
           <input type="text" id="userName" placeholder="Your Name *" required />
         </div>
         <div class="form-group">
-           <input type="tel" id="phone" name="phone" placeholder="Enter your phone number *" required>
-        </div>>
+          <input type="tel" id="phone" placeholder="Phone Number *" required />
+        </div>
         <div class="form-group">
-          <input type="email" id="userEmail" placeholder="Email Address (optional)" />
+          <input type="email" id="userEmail" placeholder="Email (optional)" />
         </div>
         <div class="form-group">
           <input type="text" id="userTable" placeholder="Table Number *" required />
@@ -63,13 +74,9 @@
   </main>
 
   <footer>
-    <p>© 2025 Barf Malai | Powered by  Go Digital</p>
+    <p>© 2025 Barf Malai | Powered by <strong>Go Digital</strong></p>
   </footer>
 
   <script src="script.js"></script>
 </body>
 </html>
-
-
-
-
