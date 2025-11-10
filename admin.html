@@ -1,147 +1,99 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Barf Malai Admin Panel</title>
-  <style>
-    body {font-family: 'Poppins', sans-serif; background:#fafafa; margin:0; padding:0;}
-    header {background:#ff6b6b; color:white; padding:15px; text-align:center; font-size:22px;}
-    .container {max-width:900px; margin:30px auto; background:white; border-radius:10px; box-shadow:0 3px 10px rgba(0,0,0,0.1); padding:20px;}
-    h2 {border-left:5px solid #ff6b6b; padding-left:10px;}
-    form {margin:15px 0;}
-    input, select {padding:8px; margin:5px 0; width:100%; border:1px solid #ccc; border-radius:6px;}
-    button {background:#ff6b6b; color:white; border:none; padding:10px 16px; border-radius:6px; cursor:pointer;}
-    button:hover {background:#ff5050;}
-    table {width:100%; border-collapse:collapse; margin-top:15px;}
-    th, td {border:1px solid #ddd; padding:8px; text-align:left;}
-    th {background:#ffefef;}
-    .success {color:green;}
-    .error {color:red;}
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Yadava's Admin Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Minimal admin CSS (kept compact) */
+  body{font-family:Poppins,system-ui,Arial;background:#f6f7fb;margin:0;color:#111}
+  header{background:linear-gradient(90deg,#ff6b6b,#ff8e8e);padding:12px 20px;color:#fff;display:flex;justify-content:space-between;align-items:center}
+  .container{max-width:1100px;margin:22px auto;padding:0 16px}
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+  .card{background:#fff;padding:18px;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.06);text-align:center}
+  .card h2{margin:0;color:#ff4b4b}
+  .section{background:#fff;border-radius:10px;padding:18px;margin-bottom:18px;box-shadow:0 6px 18px rgba(0,0,0,.04)}
+  h3{margin:0 0 12px 0;color:#222}
+  form .row{display:flex;gap:12px;margin-bottom:10px}
+  input[type=text],input[type=number],select,textarea{width:100%;padding:10px;border:1px solid #eee;border-radius:8px}
+  button{background:linear-gradient(90deg,#ff6b6b,#ff8e8e);color:#fff;padding:10px 14px;border:0;border-radius:8px;cursor:pointer}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:10px;border-bottom:1px solid #f0f0f0;text-align:left}
+  thead th{background:#ff6b6b;color:#fff}
+  .actions button{margin-right:6px}
+  .image-preview{width:80px;height:80px;border-radius:8px;overflow:hidden;border:1px solid #eee}
+  .flex{display:flex;gap:10px;align-items:center}
+  @media (max-width:900px){.cards{grid-template-columns:repeat(2,1fr)}}
+</style>
 </head>
 <body>
-  <header>🍦 Barf Malai Admin Panel</header>
-  <div class="container">
+<header><div style="font-weight:700">🍦 Yadava's Admin Panel</div><div><button onclick="loadDashboard()">Refresh</button></div></header>
 
-    <h2>Add Category</h2>
-    <form id="addCategoryForm">
-      <input type="text" id="catName" placeholder="Category Name" required>
-      <input type="file" id="catImage" accept="image/*" required>
-      <button type="submit">Upload Category</button>
-    </form>
-    <div id="catMsg"></div>
-
-    <hr>
-
-    <h2>Add Menu Item</h2>
-    <form id="addMenuForm">
-      <input type="text" id="itemName" placeholder="Item Name" required>
-      <input type="number" id="itemPrice" placeholder="Price" required>
-      <input type="text" id="itemDescription" placeholder="Description">
-      <select id="itemCategory" required></select>
-      <input type="file" id="itemImage" accept="image/*" required>
-      <select id="itemType">
-        <option value="veg">Veg</option>
-        <option value="non-veg">Non-Veg</option>
-      </select>
-      <button type="submit">Add Menu Item</button>
-    </form>
-    <div id="menuMsg"></div>
-
-    <hr>
-    <h2>Current Categories</h2>
-    <table id="catTable">
-      <thead><tr><th>Name</th><th>Image</th></tr></thead>
-      <tbody></tbody>
-    </table>
-
+<div class="container">
+  <div class="cards">
+    <div class="card"><h2 id="totalOrders">0</h2><p>Total Orders</p></div>
+    <div class="card"><h2 id="totalSales">₹0</h2><p>Total Sales</p></div>
+    <div class="card"><h2 id="todayOrders">0</h2><p>Today's Orders</p></div>
+    <div class="card"><h2 id="pendingOrders">0</h2><p>Pending Orders</p></div>
   </div>
 
-<script>
-const SHEET_URL = "https://script.google.com/macros/s/AKfycbytm_qmrzbJljoueecFK8_F-yBiU3evpeU4NWVl6_tCkvtiG_jCoHSE4xlS1RxDoCpe/exec";
+  <div class="section">
+    <h3>Add Category</h3>
+    <form id="categoryForm" onsubmit="return submitCategory(event)">
+      <div class="row">
+        <input type="text" id="catName" placeholder="Category Name" required />
+        <input type="file" id="catImageFile" accept="image/*" />
+      </div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <div class="image-preview" id="catPreview">No image</div>
+        <div><button type="submit">Upload Category</button></div>
+      </div>
+    </form>
+    <hr style="margin:12px 0">
+    <h3>Add Menu Item</h3>
+    <form id="productForm" onsubmit="return submitProduct(event)">
+      <div class="row">
+        <input type="text" id="prodName" placeholder="Item Name" required />
+        <input type="number" id="prodPrice" placeholder="Price ₹" step="0.01" required />
+      </div>
+      <div class="row">
+        <input type="text" id="prodDesc" placeholder="Description" />
+        <select id="prodCategory"></select>
+      </div>
+      <div class="row">
+        <input type="file" id="prodImageFile" accept="image/*" />
+        <select id="prodType"><option value="veg">Veg</option><option value="non-veg">Non-Veg</option></select>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="image-preview" id="prodPreview">No image</div>
+        <div><button type="submit">Add Menu Item</button></div>
+      </div>
+    </form>
+  </div>
 
-// ---- CATEGORY UPLOAD ----
-document.getElementById("addCategoryForm").addEventListener("submit", async (e)=>{
-  e.preventDefault();
-  const msg = document.getElementById("catMsg");
-  const name = document.getElementById("catName").value.trim();
-  const file = document.getElementById("catImage").files[0];
-  if(!name || !file) return alert("Please fill all fields");
+  <div class="section">
+    <h3>Orders List</h3>
+    <div id="ordersLoading">Loading orders...</div>
+    <table id="ordersTable" style="display:none"><thead><tr><th>Time</th><th>Name</th><th>Phone</th><th>Table</th><th>Items</th><th>Total</th><th>Status</th><th>Actions</th></tr></thead><tbody id="ordersBody"></tbody></table>
+  </div>
 
-  const fd = new FormData();
-  fd.append("action","uploadCategory");
-  fd.append("name",name);
-  fd.append("file",file);
-  msg.innerHTML="⏳ Uploading...";
+  <div class="section">
+    <h3>Menu Editor</h3>
+    <div id="menuLoading">Loading menu...</div>
+    <table id="menuTable" style="display:none"><thead><tr><th>Item</th><th>Price</th><th>Image</th><th>Category</th><th>Type</th><th>Actions</th></tr></thead><tbody id="menuBody"></tbody></table>
+  </div>
 
-  try{
-    const res = await fetch(SHEET_URL,{method:"POST",body:fd});
-    const data = await res.json();
-    if(data.success){
-      msg.innerHTML = "<span class='success'>✅ Category added successfully</span>";
-      document.getElementById("addCategoryForm").reset();
-      loadCategories();
-    }else msg.innerHTML = "<span class='error'>❌ "+data.error+"</span>";
-  }catch(err){
-    msg.innerHTML = "<span class='error'>❌ Upload failed</span>";
-  }
-});
+</div>
 
-// ---- MENU ITEM UPLOAD ----
-document.getElementById("addMenuForm").addEventListener("submit", async (e)=>{
-  e.preventDefault();
-  const msg = document.getElementById("menuMsg");
-  const name = itemName.value.trim();
-  const price = itemPrice.value.trim();
-  const desc = itemDescription.value.trim();
-  const cat = itemCategory.value;
-  const type = itemType.value;
-  const file = itemImage.files[0];
-  if(!name || !price || !cat || !file) return alert("Fill all required fields");
+<!-- Bill Modal -->
+<div id="billModal" style="display:none;position:fixed;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,.5);align-items:center;justify-content:center">
+  <div style="background:#fff;padding:20px;border-radius:10px;width:420px;max-width:90%">
+    <div id="billContent"></div>
+    <div style="text-align:right;margin-top:12px"><button onclick="closeBill()">Close</button><button onclick="printBill()">Print</button></div>
+  </div>
+</div>
 
-  const fd = new FormData();
-  fd.append("action","uploadMenuItem");
-  fd.append("name",name);
-  fd.append("price",price);
-  fd.append("desc",desc);
-  fd.append("category",cat);
-  fd.append("type",type);
-  fd.append("file",file);
-  msg.innerHTML="⏳ Uploading...";
-
-  try{
-    const res = await fetch(SHEET_URL,{method:"POST",body:fd});
-    const data = await res.json();
-    if(data.success){
-      msg.innerHTML = "<span class='success'>✅ Menu item added successfully</span>";
-      document.getElementById("addMenuForm").reset();
-    }else msg.innerHTML = "<span class='error'>❌ "+data.error+"</span>";
-  }catch(err){
-    msg.innerHTML = "<span class='error'>❌ Upload failed</span>";
-  }
-});
-
-// ---- LOAD CATEGORIES INTO MENU FORM ----
-async function loadCategories(){
-  try{
-    const res = await fetch(SHEET_URL+"?action=getCategories");
-    const data = await res.json();
-    const select = document.getElementById("itemCategory");
-    const tbody = document.querySelector("#catTable tbody");
-    select.innerHTML="";
-    tbody.innerHTML="";
-    data.forEach(c=>{
-      const opt = document.createElement("option");
-      opt.value=c.name;
-      opt.textContent=c.name;
-      select.appendChild(opt);
-      const tr = document.createElement("tr");
-      tr.innerHTML=`<td>${c.name}</td><td><img src="${c.image}" width="60"></td>`;
-      tbody.appendChild(tr);
-    });
-  }catch(err){console.error(err);}
-}
-loadCategories();
-</script>
+<script src="admin.js"></script>
 </body>
 </html>
